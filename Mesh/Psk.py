@@ -1,16 +1,6 @@
 #!/usr/bin/env python
 #Psk.py
 
-# See original source and C based tutorial at http://nehe.gamedev.net
-#This code was created by Richard Campbell '99
-
-#(ported to Python/PyOpenGL by John Ferguson 2000)
-#John Ferguson at hakuin@voicenet.com
-
-#Code ported for use with pyglet by Jess Hill (Jestermon) 2009
-#jestermon.weebly.com
-#jestermonster@gmail.com
-
 #because these lessons sometimes need  openGL GLUT, you need to install
 #pyonlgl as well as pyglet, in order for this sample them to work
 #pyopengl ~ http://pyopengl.sourceforge.net
