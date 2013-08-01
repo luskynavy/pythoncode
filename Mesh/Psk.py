@@ -285,7 +285,7 @@ class World(pyglet.window.Window):
         self.g_dwLastFPS = 0                                    # Last FPS Check Time
         self.myimage1 = None
         self.texturesList = None
-        self.set_vsync(False)
+        #self.set_vsync(False)
 
         print "%.3f setup end" % time.clock()
         
