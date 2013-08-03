@@ -13,6 +13,8 @@ from itertools import izip
 
 import math
 import time
+import sys
+import os.path
 
 # import pyglet
 # import struct
@@ -286,6 +288,8 @@ class World(pyglet.window.Window):
         self.myimage1 = None
         self.texturesList = None
         #self.set_vsync(False)
+        self.camHeight = -7.0
+        self.camDistance = -20.0
 
         print "%.3f setup end" % time.clock()
         
@@ -477,20 +481,23 @@ class World(pyglet.window.Window):
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def LoadMaterials(self):        
-        global matlist
+        global matlist, dirname
+        
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
         
         self.texturesList = []
         
         for i in matlist:
             diffuse = None            
             if i[0] != '':
-                diffuse = self.ImageLoad(i[0])
+                diffuse = self.ImageLoad(dirname + i[0])
                 glTexImage2D(GL_TEXTURE_2D, 0, 4, diffuse.x, diffuse.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, diffuse.imagedata)
                 glBindTexture(diffuse.texturedata.target, diffuse.texturedata.id)
             
             normal = None
             if i[1] != '':
-                normal = self.ImageLoad(i[1])
+                normal = self.ImageLoad(dirname + i[1])
                 glTexImage2D(GL_TEXTURE_2D, 0, 4, normal.x, normal.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, normal.imagedata)
                 glBindTexture(normal.texturedata.target, normal.texturedata.id)
             self.texturesList.append([diffuse, normal])
@@ -498,10 +505,10 @@ class World(pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def LoadGLTextures(self):
         global idTexture
-        self.myimage1 = self.ImageLoad("Batman_V3_Body_D.png") #good v Pierre _current_pitch    int: -6144
-#        self.myimage1 = self.ImageLoad("Batman_V3_Body_D_.tga") #bad v Pierre _current_pitch    int: 6144
-#        self.myimage1 = self.ImageLoad("Batman_V3_head_D.png")
-#        self.myimage1 = self.ImageLoad("BodyNude_D.tga") #bad v Pierre _current_pitch    int: 6144
+        self.myimage1 = self.ImageLoad(dirname + "Batman_V3_Body_D.png") #good v Pierre _current_pitch    int: -6144
+#        self.myimage1 = self.ImageLoad(dirname + "Batman_V3_Body_D_.tga") #bad v Pierre _current_pitch    int: 6144
+#        self.myimage1 = self.ImageLoad(dirname + "Batman_V3_head_D.png")
+#        self.myimage1 = self.ImageLoad(dirname + "BodyNude_D.tga") #bad v Pierre _current_pitch    int: 6144
 
         #print "%.3f ImageLoaded" % time.clock()
 
@@ -517,8 +524,8 @@ class World(pyglet.window.Window):
 #         glBindTexture(GL_TEXTURE_2D, idTexture.value)
 
         # texture 1 (poor quality scaling)
-#         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST)  # cheap scaling when image bigger than texture
-#         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST)  # cheap scaling when image smalled than texture
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
 
         # 2d texture, level of detail 0 (normal), 3 components (red, green, blue), x size from image, y size from image,
         # border 0 (normal), rgb color data, unsigned byte data, and finally the data itself.
@@ -526,7 +533,7 @@ class World(pyglet.window.Window):
         glBindTexture(self.myimage1.texturedata.target, self.myimage1.texturedata.id)   # 2d texture (x and y size)
         #glBindTexture(GL_TEXTURE_2D, idTexture.value)   # 2d texture (x and y size)
         
-        self.myimage2 = self.ImageLoad("Batman_V3_Body_N.tga") #good v Pierre _current_pitch    int: -6144
+        self.myimage2 = self.ImageLoad(dirname + "Batman_V3_Body_N.tga") #good v Pierre _current_pitch    int: -6144
         
         glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage2.x, self.myimage2.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage2.imagedata)
         glBindTexture(self.myimage2.texturedata.target, self.myimage2.texturedata.id)   # 2d texture (x and y size)
@@ -697,9 +704,9 @@ class World(pyglet.window.Window):
             shader.uniformi('normal_texture', 1)
             glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata.id)            
         
-        glCallList(self.listId)
+        #glCallList(self.listId)
 
-        #glDrawArrays(GL_TRIANGLES, 0, len(vavertices) // 3)
+        glDrawArrays(GL_TRIANGLES, 0, len(vavertices) // 3)
         #glVertexPointer(3, GL_FLOAT, 0, var1.tostring())
         
         if self.normalMapOn == 1:
@@ -766,7 +773,7 @@ class World(pyglet.window.Window):
         glLoadIdentity()                  # Reset The View        
 
         # Move Left 1.5 units and into the screen 6.0 units.
-        glTranslatef(-1.5, -7.0, -20.0)
+        glTranslatef(0, self.camHeight, self.camDistance)
         self.angle += self.rotateSpeed
         glRotatef(self.angle, 0, 1, 0)
         
@@ -778,7 +785,7 @@ class World(pyglet.window.Window):
         glColor3f(0.5, 0.5, 0.5)
         
         #self.DrawOneMaterial()
-        self.DrawMultipleMaterials()        
+        self.DrawMultipleMaterials()
         
         # Since we have smooth color mode on, this will be great for the Phish Heads :-).
                 # Draw a triangle
@@ -828,24 +835,31 @@ class World(pyglet.window.Window):
                 glDisable(GL_TEXTURE_2D)
             else:
                 self.texturesOn = 1
-                glEnable(GL_TEXTURE_2D)
-        
+                glEnable(GL_TEXTURE_2D)        
         if symbol == key.N:
             if self.normalMapOn == 1:
                 self.normalMapOn = 0
             else:
                 self.normalMapOn = 1
+        if symbol == key.UP:
+            self.camDistance += 1.0
+        if symbol == key.DOWN:
+            self.camDistance -= 1.0
+        if symbol == key.PAGEUP:
+            self.camHeight += 1.0
+        if symbol == key.PAGEDOWN:
+            self.camHeight -= 1.0
 
 # bonesize = 1.0
 # md5_bones=[]
 
 def pskimport(infile):
-    global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist
+    global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist, dirname
 #     global DEBUGLOG
-    print ("--------------------------------------------------")
-    print ("---------SCRIPT EXECUTING PYTHON IMPORTER---------")
-    print ("--------------------------------------------------")
-    print ("Importing file: ", infile)
+    #print ("--------------------------------------------------")
+    #print ("---------SCRIPT EXECUTING PYTHON IMPORTER---------")
+    #print ("--------------------------------------------------")
+    #print ("Importing file: ", infile)
 
 #     md5_bones=[]
     pskfile = open(infile,'rb')
@@ -861,7 +875,7 @@ def pskimport(infile):
     objName = infile.split('\\')[-1].split('.')[0]
 
     #me_ob = bpy.data.meshes.new(objName)
-    print("objName:",objName)
+    #print("objName:",objName)
     #print "New Mesh = " + me_ob.name + "\n"
     #read general header
     indata = unpack('20s3i',pskfile.read(32))
@@ -872,7 +886,7 @@ def pskimport(infile):
     #read the PNTS0000 header
     indata = unpack('20s3i',pskfile.read(32))
     recCount = indata[3]
-    print "Nbr of PNTS0000 records: " + str(recCount) + "\n"
+    print "Nbr of PNTS0000 records: " + str(recCount)
     counter = 0
     vertexlist = []
     while counter < recCount:
@@ -889,7 +903,7 @@ def pskimport(infile):
     #read the VTXW0000 header
     indata = unpack('20s3i',pskfile.read(32))
     recCount = indata[3]
-    print "Nbr of VTXW0000 records: " + str(recCount)+ "\n"
+    print "Nbr of VTXW0000 records: " + str(recCount)
     counter = 0
     UVCoords = []
     #UVCoords record format = [index to PNTS, U coord, v coord]
@@ -906,7 +920,7 @@ def pskimport(infile):
     #read the FACE0000 header
     indata = unpack('20s3i',pskfile.read(32))
     recCount = indata[3]
-    print "Nbr of FACE0000 records: "+ str(recCount) + "\n"
+    print "Nbr of FACE0000 records: "+ str(recCount)
     #PSK FACE0000 fields: WdgIdx1|WdgIdx2|WdgIdx3|MatIdx|AuxMatIdx|SmthGrp
     #associate MatIdx to an image, associate SmthGrp to a material
     SGlist = []
@@ -977,7 +991,7 @@ def pskimport(infile):
         
         diffuse = ''
         normal = ''
-        matfile = open(indata[0].rstrip('\x00') + '.mat')        
+        matfile = open(dirname + indata[0].rstrip('\x00') + '.mat')        
         for line in matfile:
             if line.split('=')[0] == 'Diffuse':
                 diffuse = line.split('=')[1].replace('\n', '') + '.tga'
@@ -1277,17 +1291,38 @@ scale = .07
 
 ##################################main
 if __name__ == "__main__":
-    global plik#,dirname,basename
+    global plik,dirname#,basename
 #     global model_id
-    global vertexlist, faces, faceslist, UVCoords, faceuv
-
-    pskimport("Batman_Rabbit_Head_Posed.psk")
-    #pskimport("Batmobile_MESH_DAMAGE_TEST.pskx")
-    #pskimport("Talia_posed.psk")
-    #pskimport("DLC11_Batman_Inc_CV_pose.psk")
-    #pskimport("catwoman_posed.psk")
-    #pskimport("BatmanV3_Unmasked_Posed.psk")
-    #pskimport("Elrath_Bikini_Skm.psk")
+    global vertexlist, faces, faceslist, UVCoords, faceuv    
+    
+    if len(sys.argv) > 1:
+        filename = sys.argv[1]
+    else:        
+        filename = "ABGame/6/Elrath_A_Type_Skm.psk"
+        filename = "ABGame/7/Elrath_Bikini_Skm.psk"
+        filename = "ABGame/8/Elrath_Skm.psk"
+        filename = "ABGame/10/Rehiney_Skm.psk"
+        filename = "Batman_Rabbit_Head_Posed/Batman_Rabbit_Head_Posed.psk"
+        '''filename = "ABGame/15/Ridika_Bikini_Skm.psk"
+        filename = "ABGame/16/Ridika_Skm.psk"
+        filename = "ABGame/20/Valle_Bikini_Skm.psk"
+        filename = "ABGame/21/Valle_Skm.psk"
+        filename = "ABGame/23/Ridika02_Sm.pskx"'''
+        
+        #filename = "Batmobile_MESH_DAMAGE_TEST.pskx"
+        #filename = "Talia_posed.psk"
+        #filename = "DLC11_Batman_Inc_CV_pose.psk"
+        #filename = "catwoman_posed.psk"
+        #filename = "BatmanV3_Unmasked_Posed.psk"
+        #filename = "Elrath_Bikini_Skm.psk"
+    
+    filename.replace('\\', '/')
+    
+    dirname = os.path.dirname(filename)
+    if dirname != '':
+        dirname += '/'
+    
+    pskimport(filename)    
 
 #    print 'nb vertex', len(vertexlist), ', nb face', len(faces), ', uv list', len(UVCoords), ', faceuv', len(faceuv), ', facemat', len(facemat)
 #    print vertexlist[0], faces[0], faces[1], faces[2]#, faces[0][0], faces[0][1], faces[0][2]
