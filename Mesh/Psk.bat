@@ -1,0 +1,1 @@
+start H:\d\Python\PythonCode\Mesh\psk.py %1
