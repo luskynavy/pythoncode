@@ -121,55 +121,56 @@ varying vec3 normal, lightDir0, lightDir1, eyeVec;
 //uniform sampler2D my_color_texture[+str(texturecnt)+]; //0 = ColorMap, 1 = NormalMap
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
-int toggletexture = 1; // false/true
+uniform int toggletexture = 1; // false/true
 int togglebump = 1;    // false/true
 
 void main (void)
 {
         vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
-        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
-        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
+        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
+        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
         //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
 
         if ( toggletexture == 0 ) texColor = gl_FrontMaterial.ambient;
-        vec4 final_color = (gl_FrontLightModelProduct.sceneColor * vec4(texColor.rgb,1.0)) +
-    (gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
-    (gl_LightSource[1].ambient * vec4(texColor.rgb,1.0));
+        //vec4 final_color = (.5*gl_FrontLightModelProduct.sceneColor * vec4(texColor.rgb,1.0)) +
+        vec4 final_color = (.3* vec4(texColor.rgb,1.0)) +
+    (.3*gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
+    (.3*gl_LightSource[1].ambient * vec4(texColor.rgb,1.0));
 
     //vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 0.0, 1.0 );
     vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 1.0, 0.0 );
     vec3 L0 = normalize(lightDir0);
     vec3 L1 = normalize(lightDir1);
 
-    float lambertTerm0 = -.50 * dot(N,L0);
-    float lambertTerm1 = -.50 * dot(N,L1);
+    float lambertTerm0 = .0 * dot(N,L0);
+    float lambertTerm1 = .5 * dot(N,L1);
 
     if(lambertTerm0 > 0.0)
     {
         final_color += gl_LightSource[0].diffuse *
-                       gl_FrontMaterial.diffuse *
+                       //gl_FrontMaterial.diffuse *
                        lambertTerm0;
 
         vec3 E = normalize(eyeVec);
         vec3 R = reflect(-L0, N);
         float specular = pow( max(dot(R, E), 0.0),
                          gl_FrontMaterial.shininess );
-        final_color += gl_LightSource[0].specular *
-                       gl_FrontMaterial.specular *
+        final_color += .5*gl_LightSource[0].specular *
+                       //gl_FrontMaterial.specular *
                        specular;
     }
     if(lambertTerm1 > 0.0)
     {
         final_color += gl_LightSource[1].diffuse *
-                       gl_FrontMaterial.diffuse *
+                       //gl_FrontMaterial.diffuse *
                        lambertTerm1;
 
         vec3 E = normalize(eyeVec);
         vec3 R = reflect(-L1, N);
         float specular = pow( max(dot(R, E), 0.0),
                          gl_FrontMaterial.shininess );
-        final_color += gl_LightSource[1].specular *
-                       gl_FrontMaterial.specular *
+        final_color += .5*gl_LightSource[1].specular *
+                       //gl_FrontMaterial.specular *
                        specular;
     }
     //if (final_color.r > 0.1)
@@ -272,8 +273,8 @@ class World(pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def setup(self):        
         #global var
-        self.width = 640
-        self.height = 480
+        self.width = 800
+        self.height = 600
         self.InitGL(self.width, self.height)
         pyglet.clock.schedule_interval(self.update, 1/600.0) # update at 60Hz
         self.listId = -1
@@ -729,7 +730,8 @@ class World(pyglet.window.Window):
         
         ####### multiple materials method #######
         for m in xrange(len(self.listIds)):
-            glBindTexture(GL_TEXTURE_2D, self.texturesList[m][0].texturedata.id)            
+            if self.texturesList[m][0] != None:
+                glBindTexture(GL_TEXTURE_2D, self.texturesList[m][0].texturedata.id)            
             if self.normalMapOn == 1: 
                 shader.bind()
                 glActiveTexture(GL_TEXTURE0)
@@ -990,13 +992,16 @@ def pskimport(infile):
         print counter, indata[0].rstrip('\x00')
         
         diffuse = ''
-        normal = ''
-        matfile = open(dirname + indata[0].rstrip('\x00') + '.mat')        
-        for line in matfile:
-            if line.split('=')[0] == 'Diffuse':
-                diffuse = line.split('=')[1].replace('\n', '') + '.tga'
-            if line.split('=')[0] == 'Normal':
-                normal = line.split('=')[1].replace('\n', '') + '.tga'
+        normal = ''        
+        try:
+            matfile = open(dirname + indata[0].rstrip('\x00') + '.mat')        
+            for line in matfile:
+                if line.split('=')[0] == 'Diffuse':
+                    diffuse = line.split('=')[1].replace('\n', '') + '.tga'
+                if line.split('=')[0] == 'Normal':
+                    normal = line.split('=')[1].replace('\n', '') + '.tga'
+        except:
+            pass        
         matlist[counter] = [diffuse, normal]
         counter = counter + 1
     print matlist
