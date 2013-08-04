@@ -40,60 +40,87 @@ http://en.wikibooks.org/wiki/GLSL_Programming
 
 shader = Shader(['''
 //varying vec4 pt;
-varying vec3 colorL;
+varying vec3 colorL, eyeVec, lightDir1_, normalDirection;
+//varying vec3 spec;
 void main() {
-gl_TexCoord[0] = gl_MultiTexCoord0;
+    vec3 normal   = normalize(gl_NormalMatrix * gl_Normal);
+    vec3 tangent  = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
+    vec3 binormal = cross(normal, tangent);
+    mat3 TBNMatrix = mat3(tangent, binormal, normal);       
+    
+    normalDirection = normalize(gl_NormalMatrix * gl_Normal);
+    vec3 lightDir1 = normalize(vec3(gl_LightSource[1].position));
+    //lightDir1_ = -normalize(vec3(gl_ModelViewMatrix * gl_LightSource[1].position));
+    //lightDir1_ = lightDir1;
+    //vec3 lightDirection = normalize(vec3(0.0, 1.0, 1.0));
+    
+    vec3 diffuseReflection = 
+       vec3(gl_LightSource[1].diffuse) 
+       * 1.0 //* vec3(gl_FrontMaterial.emission)
+       * max(0.0, dot(normalDirection, lightDir1));
+       //* dot(normalDirection, lightDirection);
+    
+    colorL = diffuseReflection;
+        
+    //eyeVec = -normalize(vec3(gl_ModelViewMatrix * gl_Vertex));
+    vec3 vVertex = vec3(gl_ModelViewMatrix * gl_Vertex);
 
-vec3 normalDirection = normalize(gl_NormalMatrix * gl_Normal);
-vec3 lightDirection = normalize(vec3(gl_LightSource[1].position));
-//vec3 lightDirection = normalize(vec3(0.0, 1.0, 1.0));
-
-vec3 diffuseReflection = 
-   vec3(gl_LightSource[1].diffuse) 
-   * 1.0 //* vec3(gl_FrontMaterial.emission)
-   * max(0.0, dot(normalDirection, lightDirection));
-   //* dot(normalDirection, lightDirection);
-
-colorL = diffuseReflection; 
-
-//pt = gl_Vertex;
-//pt.z /= 20.0;
-//pt.z += 1.5;
-// Set the position of the current vertex
-gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-//gl_Position = gl_ModelViewProjectionMatrix * pt;
+    //lightDir0 = vec3(gl_LightSource[0].position.xyz - vVertex) * TBNMatrix;
+    lightDir1_ = vec3(gl_LightSource[1].position.xyz - vVertex) * TBNMatrix;
+    eyeVec    = -vVertex * TBNMatrix;
+    
+    //pt = gl_Vertex;
+    //pt.z /= 20.0;
+    //pt.z += 1.5;
+    
+    gl_TexCoord[0] = gl_MultiTexCoord0;
+    //gl_TexCoord[0]  = gl_TextureMatrix[0] * gl_MultiTexCoord0;
+    
+    // Set the position of the current vertex
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+    //gl_Position = gl_ModelViewProjectionMatrix * pt;
 }
 '''], ['''
 varying vec3 colorL;
+varying vec3 eyeVec, lightDir1_, normalDirection;
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
 uniform int toggletexture; // false/true
 
 void main() {
+    
+    // Extract the normal from the normal map
+    vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
+    //vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb);
+    //vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb - .5);    
+    
+    // Calculate the lighting diffuse value
+    //float diffuse = max(dot(normal, light_pos), 0.0);
+    float diffuse = dot(normal, colorL);
+    vec3 L1 = normalize(lightDir1_);
+    
+    vec3 color = (toggletexture == 1
+        //? diffuse/2.0 + texture2D(color_texture, gl_TexCoord[0].st).rgb/2.0
+        ? diffuse * texture2D(color_texture, gl_TexCoord[0].st).rgb
+        //: diffuse/2.0 + vec3(0.75, 0.75, 0.75)/2.0);
+        : diffuse * vec3(0.75, 0.75, 0.75));
+    //vec3 color = colorL * vec3(0.5, 0.5, 0.5);
+    
+    vec3 E = normalize(eyeVec);
+    //vec3 R = reflect(-L1, normalDirection);
+    vec3 R = reflect(-L1, normal);
+    float specular = pow( max(dot(R, E), 0.0),
+        gl_FrontMaterial.shininess );
+    color += vec3(gl_LightSource[1].specular) *
+        vec3(gl_FrontMaterial.specular) *
+        specular;
 
-// Extract the normal from the normal map
-vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
-//vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb);
-//vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb - .5);
-
-// Determine where the light is positioned (this can be set however you like)
-vec3 light_pos = normalize(vec3(1.0, 1.0, 1.5));
-
-// Calculate the lighting diffuse value
-//float diffuse = max(dot(normal, light_pos), 0.0);
-float diffuse = dot(normal, colorL);
-
-vec3 color = (toggletexture == 1
-    ? diffuse * texture2D(color_texture, gl_TexCoord[0].st).rgb
-    : diffuse * vec3(0.75, 0.75, 0.75));
-//vec3 color = colorL * vec3(0.5, 0.5, 0.5);
-
-// Set the output color of our current pixel
-gl_FragColor = vec4(color, 1.0);
+    // Set the output color of our current pixel
+    gl_FragColor = vec4(color, 1.0);
 }
 '''])
 
-shader1 = Shader(['''
+shader = Shader(['''
 #version 120
 varying vec3 lightDir0, lightDir1, eyeVec;
 varying vec3 normal, tangent, binormal;
@@ -112,8 +139,8 @@ void main()
     lightDir1 = vec3(gl_LightSource[1].position.xyz - vVertex) * TBNMatrix;
     eyeVec    = -vVertex * TBNMatrix;
 
-    gl_Position = ftransform();
-        gl_TexCoord[0]  = gl_TextureMatrix[0] * gl_MultiTexCoord0;
+    gl_Position =gl_ModelViewProjectionMatrix * gl_Vertex;
+    gl_TexCoord[0]  = gl_TextureMatrix[0] * gl_MultiTexCoord0;
 }
 '''], ['''
 #version 120
@@ -127,15 +154,15 @@ int togglebump = 1;    // false/true
 void main (void)
 {
         vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
-        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
-        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
+        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
+        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
         //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
 
         if ( toggletexture == 0 ) texColor = gl_FrontMaterial.ambient;
-        //vec4 final_color = (.5*gl_FrontLightModelProduct.sceneColor * vec4(texColor.rgb,1.0)) +
-        vec4 final_color = (.3* vec4(texColor.rgb,1.0)) +
-    (.3*gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
-    (.3*gl_LightSource[1].ambient * vec4(texColor.rgb,1.0));
+        vec4 final_color = (gl_FrontLightModelProduct.sceneColor * vec4(texColor.rgb,1.0)) +
+        //vec4 final_color = (.3* vec4(texColor.rgb,1.0)) +
+    //(.3*gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
+    (gl_LightSource[1].ambient * vec4(texColor.rgb,1.0));
 
     //vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 0.0, 1.0 );
     vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 1.0, 0.0 );
@@ -143,7 +170,7 @@ void main (void)
     vec3 L1 = normalize(lightDir1);
 
     float lambertTerm0 = .0 * dot(N,L0);
-    float lambertTerm1 = .5 * dot(N,L1);
+    float lambertTerm1 = 1. * dot(N,L1);
 
     if(lambertTerm0 > 0.0)
     {
@@ -155,22 +182,22 @@ void main (void)
         vec3 R = reflect(-L0, N);
         float specular = pow( max(dot(R, E), 0.0),
                          gl_FrontMaterial.shininess );
-        final_color += .5*gl_LightSource[0].specular *
+        final_color += gl_LightSource[0].specular *
                        //gl_FrontMaterial.specular *
                        specular;
     }
     if(lambertTerm1 > 0.0)
     {
         final_color += gl_LightSource[1].diffuse *
-                       //gl_FrontMaterial.diffuse *
+                       gl_FrontMaterial.diffuse *
                        lambertTerm1;
 
         vec3 E = normalize(eyeVec);
         vec3 R = reflect(-L1, N);
         float specular = pow( max(dot(R, E), 0.0),
                          gl_FrontMaterial.shininess );
-        final_color += .5*gl_LightSource[1].specular *
-                       //gl_FrontMaterial.specular *
+        final_color += gl_LightSource[1].specular *
+                       gl_FrontMaterial.specular *
                        specular;
     }
     //if (final_color.r > 0.1)
@@ -179,6 +206,131 @@ void main (void)
 }
 '''])
 
+#http://en.wikibooks.org/wiki/GLSL_Programming/Blender/Lighting_of_Bumpy_Surfaces
+shader = Shader(['''
+#version 120
+attribute vec4 tangent;
+ 
+varying mat3 localSurface2View; // mapping from 
+   // local surface coordinates to view coordinates
+varying vec4 texCoords; // texture coordinates
+varying vec4 position; // position in view coordinates
+
+void main()
+{                              
+    // the signs and whether tangent is in localSurface2View[1] 
+    // or localSurface2View[0] depends on the tangent 
+    // attribute, texture coordinates, and the encoding 
+    // of the normal map 
+    localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix 
+       * vec4(vec3(tangent), 0.0)));
+    localSurface2View[2] = 
+       normalize(gl_NormalMatrix * gl_Normal);
+    localSurface2View[1] = normalize(
+       cross(localSurface2View[2], localSurface2View[0]));
+    
+    texCoords = gl_MultiTexCoord0;
+    position = gl_ModelViewMatrix * gl_Vertex;            
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+}
+'''], ['''
+#version 120
+varying mat3 localSurface2View; // mapping from 
+// local surface coordinates to view coordinates
+varying vec4 texCoords; // texture coordinates
+varying vec4 position; // position in view coordinates
+
+uniform sampler2D color_texture;
+uniform sampler2D normal_texture;
+
+void main()
+{
+    //vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
+    vec4 texColor =  texture2D(color_texture, vec2(texCoords));
+    // in principle we have to normalize the columns of 
+    // "localSurface2View" again; however, the potential 
+    // problems are small since we use this matrix only
+    // to compute "normalDirection", which we normalize anyways
+    
+    //vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords)); 
+    
+    vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
+    //vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
+       // constants depend on encoding 
+    vec3 normalDirection = 
+       normalize(localSurface2View * localCoords);
+    
+    // Compute per-pixel Phong lighting with normalDirection
+    
+    vec3 viewDirection = -normalize(vec3(position)); 
+    vec3 lightDirection;
+    float attenuation;
+    if (0.0 == gl_LightSource[1].position.w) 
+       // directional light?
+    {
+       attenuation = 1.0; // no attenuation
+       lightDirection = 
+          normalize(vec3(gl_LightSource[1].position));
+    } 
+    else // point light or spotlight (or other kind of light) 
+    {
+       vec3 positionToLightSource = 
+          vec3(gl_LightSource[1].position - position);
+       float distance = length(positionToLightSource);
+       attenuation = 1.0 / distance; // linear attenuation 
+       lightDirection = normalize(positionToLightSource);
+    
+       if (gl_LightSource[1].spotCutoff <= 90.0) // spotlight?
+       {
+          float clampedCosine = max(0.0, dot(-lightDirection, 
+             gl_LightSource[1].spotDirection));
+          if (clampedCosine < gl_LightSource[1].spotCosCutoff) 
+             // outside of spotlight cone?
+          {
+             attenuation = 0.0;
+          }
+          else
+          {
+             attenuation = attenuation * pow(clampedCosine, 
+                gl_LightSource[1].spotExponent);   
+          }
+       }
+    }
+    
+    vec3 ambientLighting = vec3(gl_LightModel.ambient) 
+       * vec3(gl_FrontMaterial.emission);
+    
+    vec3 diffuseReflection = 1.//attenuation 
+       * vec3(gl_LightSource[1].diffuse)
+       //* vec3(gl_FrontMaterial.emission)
+       * max(0.0, dot(normalDirection, lightDirection));
+    
+    vec3 specularReflection;
+    if (dot(normalDirection, lightDirection) < 0.0) 
+       // light source on the wrong side?
+    {
+       specularReflection = vec3(0.0, 0.0, 0.0); 
+          // no specular reflection
+    }
+    else // light source on the right side
+    {
+       specularReflection = attenuation 
+          * vec3(gl_LightSource[1].specular) 
+          * vec3(gl_FrontMaterial.specular) 
+          * pow(max(0.0, dot(reflect(-lightDirection, 
+          normalDirection), viewDirection)), 
+          gl_FrontMaterial.shininess);
+    }
+    
+    gl_FragColor = vec4(
+        ambientLighting *
+        1.0+//vec3(texColor) +// here?
+        diffuseReflection *
+        1.0//vec3(texColor) // here?
+        + specularReflection
+        , 1.0); 
+}
+'''])
 
 def normalize_v3(arr):
     ''' Normalize a numpy array of 3 component vectors shape=(n,3) '''
@@ -271,11 +423,11 @@ class World(pyglet.window.Window):
         self.setup()
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def setup(self):        
-        #global var
-        self.width = 800
-        self.height = 600
-        self.InitGL(self.width, self.height)
+    def setup(self):
+        self._width = 1024        
+        self._height = 768
+        self.set_size(self._width,self._height)
+        self.InitGL(self._width, self._height)
         pyglet.clock.schedule_interval(self.update, 1/600.0) # update at 60Hz
         self.listId = -1
         self.listIds = None
@@ -331,20 +483,23 @@ class World(pyglet.window.Window):
         #glEnable(GL_CULL_FACE);
         #glCullFace(GL_FRONT) #or GL_BACK or even GL_FRONT_AND_BACK
 
-        self.LightAmbient = self.vec(0.5, 0.5, 0.5, 1.0)        
-        self.LightDiffuse = self.vec(1.0, 1.0, 1.0, 1.0)
-        #self.LightPosition = self.vec(0.0, 1.0, 2.0, 1.0 )
-        self.LightPosition = self.vec(1.0, 1.0, 1.5, 0.0 )
+        
+        #self.LightPosition = self.vec(0.0, 1.0, 2.0, 1.0 )        
 
-        glLightfv(GL_LIGHT1, GL_AMBIENT, self.LightAmbient)  # add lighting. (ambient)
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, self.LightDiffuse)  # add lighting. (diffuse).
-        glLightfv(GL_LIGHT1, GL_POSITION,self.LightPosition) # set light position.
+        glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.2, 0.2, 0.2, 1.0))  # add lighting. (ambient)
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.7, 0.7, 0.7, 1.0))  # add lighting. (diffuse).
+        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(1.0, 1.0, 1.5, 0.0 )) # set light position.
+        glLightfv(GL_LIGHT1, GL_SPECULAR, self.vec(1.0, 1.0, 1.0, 1.0))
         glEnable(GL_LIGHT1)                             # turn light 1 on.
 
         #glEnable(GL_LIGHT0)                              #Quick And Dirty Lighting (Assumes Light0 Is Set Up)
         
         glEnable(GL_LIGHTING)                            #Enable Lighting
-        #glEnable(GL_COLOR_MATERIAL)                      #Enable Material Coloring'
+        glEnable(GL_COLOR_MATERIAL)                      #Enable Material Coloring'
+        
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, self.vec(0.5, 0.5, 0.5, 1.0))
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, self.vec(1, 1, 1, 1))
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50)
 
         glEnable(GL_TEXTURE_2D)                     # Enable texture mapping.
         # // Enable Pointers
@@ -355,9 +510,9 @@ class World(pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ImageLoad(self,filename):
         pic = pyglet.image.load(filename) #, decoder=PNGImageDecoder())
-        print "%.3f load done" % time.clock()
+        #print "%.3f load done" % time.clock()
         texture = pic.get_texture()
-        print "%.3f get_texture done" % time.clock()
+        #print "%.3f get_texture done" % time.clock()
         ix = pic.width
         iy = pic.height
         rawimage = pic.get_image_data()
@@ -698,12 +853,12 @@ class World(pyglet.window.Window):
         glBindTexture(GL_TEXTURE_2D, self.myimage1.texturedata.id)            
         if self.normalMapOn == 1: 
             shader.bind()
-            glActiveTexture(GL_TEXTURE0)
-            shader.uniformi('color_texture', 0)
             shader.uniformi('toggletexture', self.texturesOn)
+            glActiveTexture(GL_TEXTURE0)
+            shader.uniformi('color_texture', 0)            
             glActiveTexture(GL_TEXTURE1)
             shader.uniformi('normal_texture', 1)
-            glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata.id)            
+            glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata.id)
         
         #glCallList(self.listId)
 
@@ -734,9 +889,9 @@ class World(pyglet.window.Window):
                 glBindTexture(GL_TEXTURE_2D, self.texturesList[m][0].texturedata.id)            
             if self.normalMapOn == 1: 
                 shader.bind()
-                glActiveTexture(GL_TEXTURE0)
-                shader.uniformi('color_texture', 0)
                 shader.uniformi('toggletexture', self.texturesOn)
+                glActiveTexture(GL_TEXTURE0)
+                shader.uniformi('color_texture', 0)                
                 glActiveTexture(GL_TEXTURE1)
                 shader.uniformi('normal_texture', 1)
                 #glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata.id)
@@ -777,14 +932,14 @@ class World(pyglet.window.Window):
         # Move Left 1.5 units and into the screen 6.0 units.
         glTranslatef(0, self.camHeight, self.camDistance)
         self.angle += self.rotateSpeed
-        glRotatef(self.angle, 0, 1, 0)
+        #glRotatef(self.angle, 0, 1, 0)
         
-        #glRotatef(180, 0, 1, 0)
-        #self.LightPosition = self.vec(math.cos(self.angle*3.14/180), 0.0, math.sin(self.angle*3.14/180), 0.0 )
-        #glLightfv(GL_LIGHT1, GL_POSITION, self.LightPosition) # set light position.
+        glRotatef(180, 0, 1, 0)
+        self.LightPosition = self.vec(math.cos(self.angle*3.14/180), 0.0, math.sin(self.angle*3.14/180), 0.0 )
+        glLightfv(GL_LIGHT1, GL_POSITION, self.LightPosition) # set light position.
 
 #       glBindTexture(GL_TEXTURE_2D, idTexture.value)
-        glColor3f(0.5, 0.5, 0.5)
+        glColor4f(0.8, 0.8, 0.8, .5)
         
         #self.DrawOneMaterial()
         self.DrawMultipleMaterials()
@@ -807,7 +962,7 @@ class World(pyglet.window.Window):
         glTranslatef(3.0, 0.0, 0.0)
 
         # Draw a square (quadrilateral)
-        glColor3f(0.3, 0.5, 1.0)            # Bluish shade
+        #glColor3f(0.3, 0.5, 1.0)            # Bluish shade
         glBegin(GL_QUADS)                   # Start drawing a 4 sided polygon
         glVertex3f(-1.0, 1.0, 0.0)          # Top Left
         glVertex3f(1.0, 1.0, 0.0)           # Top Right
@@ -848,9 +1003,9 @@ class World(pyglet.window.Window):
         if symbol == key.DOWN:
             self.camDistance -= 1.0
         if symbol == key.PAGEUP:
-            self.camHeight += 1.0
-        if symbol == key.PAGEDOWN:
             self.camHeight -= 1.0
+        if symbol == key.PAGEDOWN:
+            self.camHeight += 1.0
 
 # bonesize = 1.0
 # md5_bones=[]
