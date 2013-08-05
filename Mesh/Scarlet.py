@@ -165,19 +165,20 @@ varying vec3 normal, lightDir0, lightDir1, eyeVec;
 //uniform sampler2D my_color_texture[+str(texturecnt)+]; //0 = ColorMap, 1 = NormalMap
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
-int toggletexture = 1; // false/true
+uniform int toggletexture = 1; // false/true
 int togglebump = 1;    // false/true
 
 void main (void)
 {
         vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
-        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
+        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
         //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
-        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
+        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
 
         if ( toggletexture == 0 ) texColor = gl_FrontMaterial.ambient;
         vec4 final_color = (gl_FrontLightModelProduct.sceneColor * vec4(texColor.rgb,1.0)) +
-    (gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
+        //vec4 final_color = (.3* vec4(texColor.rgb,1.0)) +
+    //(.3*gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
     (gl_LightSource[1].ambient * vec4(texColor.rgb,1.0));
 
     //vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 0.0, 1.0 );
@@ -185,13 +186,13 @@ void main (void)
     vec3 L0 = normalize(lightDir0);
     vec3 L1 = normalize(lightDir1);
 
-    float lambertTerm0 = -.0 * dot(N,L0);
-    float lambertTerm1 = -1.0 * dot(N,L1);
+    float lambertTerm0 = .0 * dot(N,L0);
+    float lambertTerm1 = 1. * dot(N,L1);
 
     if(lambertTerm0 > 0.0)
     {
         final_color += gl_LightSource[0].diffuse *
-                       gl_FrontMaterial.diffuse *
+                       //gl_FrontMaterial.diffuse *
                        lambertTerm0;
 
         vec3 E = normalize(eyeVec);
@@ -199,7 +200,7 @@ void main (void)
         float specular = pow( max(dot(R, E), 0.0),
                          gl_FrontMaterial.shininess );
         final_color += gl_LightSource[0].specular *
-                       gl_FrontMaterial.specular *
+                       //gl_FrontMaterial.specular *
                        specular;
     }
     if(lambertTerm1 > 0.0)
@@ -216,7 +217,145 @@ void main (void)
                        gl_FrontMaterial.specular *
                        specular;
     }
+    //if (final_color.r > 0.1)
+    //    discard;
     gl_FragColor = final_color;
+}
+'''])
+
+#http://en.wikibooks.org/wiki/GLSL_Programming/Blender/Lighting_of_Bumpy_Surfaces
+shader = Shader(['''
+#version 120
+//attribute vec4 tangent;
+ 
+varying mat3 localSurface2View; // mapping from 
+   // local surface coordinates to view coordinates
+varying vec4 texCoords; // texture coordinates
+varying vec4 position; // position in view coordinates
+
+void main()
+{
+    //vec3 tangent = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5)); //maybe
+    //vec3 tangent = vec3(0,0,1);
+    vec3 tangent = normalize(cross(vec3(0,1,0), gl_Normal.xyz));
+    // the signs and whether tangent is in localSurface2View[1]
+    // or localSurface2View[0] depends on the tangent
+    // attribute, texture coordinates, and the encoding
+    // of the normal map 
+    //localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix * vec4(vec3(tangent), 0.0)));
+    //localSurface2View[0]= vec3(1,0,0);
+    //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
+    //localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
+    
+    localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
+    localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
+    localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
+    //mat3 TBNMatrix = mat3(tangent, binormal, normal);
+    
+    texCoords = gl_MultiTexCoord0;
+    position = gl_ModelViewMatrix * gl_Vertex;            
+    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+}
+'''], ['''
+#version 120
+varying mat3 localSurface2View; // mapping from 
+// local surface coordinates to view coordinates
+varying vec4 texCoords; // texture coordinates
+varying vec4 position; // position in view coordinates
+
+uniform sampler2D color_texture;
+uniform sampler2D normal_texture;
+uniform int toggletexture; // false/true
+
+void main()
+{
+    //vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
+    vec4 texColor =  texture2D(color_texture, vec2(texCoords));
+    // in principle we have to normalize the columns of 
+    // "localSurface2View" again; however, the potential 
+    // problems are small since we use this matrix only
+    // to compute "normalDirection", which we normalize anyways
+    
+    if (toggletexture == 0)
+        texColor = vec4(0.75, 0.75, 0.75, 1.0);//gl_FrontMaterial.ambient;
+    
+    vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords)); 
+    
+    //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
+    //vec3 localCoords   = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
+    //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
+    vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
+       // constants depend on encoding 
+    vec3 normalDirection = normalize(localSurface2View * localCoords);
+    
+    // Compute per-pixel Phong lighting with normalDirection
+    
+    vec3 viewDirection = -normalize(vec3(position)); 
+    vec3 lightDirection;
+    float attenuation;
+    if (0.0 == gl_LightSource[1].position.w) 
+       // directional light?
+    {
+       attenuation = 1.0; // no attenuation
+       lightDirection = 
+          normalize(vec3(gl_LightSource[1].position));
+    } 
+    else // point light or spotlight (or other kind of light) 
+    {
+       vec3 positionToLightSource = 
+          vec3(gl_LightSource[1].position - position);
+       float distance = length(positionToLightSource);
+       attenuation = 1.0 / distance; // linear attenuation 
+       lightDirection = normalize(positionToLightSource);
+    
+       if (gl_LightSource[1].spotCutoff <= 90.0) // spotlight?
+       {
+          float clampedCosine = max(0.0, dot(-lightDirection, 
+             gl_LightSource[1].spotDirection));
+          if (clampedCosine < gl_LightSource[1].spotCosCutoff) 
+             // outside of spotlight cone?
+          {
+             attenuation = 0.0;
+          }
+          else
+          {
+             attenuation = attenuation * pow(clampedCosine, 
+                gl_LightSource[1].spotExponent);   
+          }
+       }
+    }
+    
+    vec3 ambientLighting = vec3(gl_LightModel.ambient) 
+       * vec3(texColor);//* vec3(gl_FrontMaterial.emission);
+    
+    vec3 diffuseReflection = 1.//attenuation 
+       * vec3(gl_LightSource[1].diffuse)
+       * vec3(texColor)//* vec3(gl_FrontMaterial.emission)       
+       * max(0.0, dot(normalDirection, lightDirection));
+    
+    vec3 specularReflection;
+    if (dot(normalDirection, lightDirection) < 0.0) 
+       // light source on the wrong side?
+    {
+       specularReflection = vec3(0.0, 0.0, 0.0); 
+          // no specular reflection
+    }
+    else // light source on the right side
+    {
+       specularReflection = attenuation 
+          * vec3(gl_LightSource[1].specular) 
+          * vec3(gl_FrontMaterial.specular) 
+          * pow(max(0.0, dot(reflect(-lightDirection, 
+          normalDirection), viewDirection)), 
+          gl_FrontMaterial.shininess);
+    }
+    
+    gl_FragColor = vec4(
+        ambientLighting +        
+        diffuseReflection +        
+        + specularReflection
+        , 1.0);
+     //gl_FragColor = vec4(vec3(texColor), 1.0);
 }
 '''])
 
@@ -278,9 +417,11 @@ class World(pyglet.window.Window):
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def setup(self):
-        self.width = 640
-        self.height = 480
-        self.InitGL(self.width, self.height)
+        self._width = 800        
+        self._height = 600
+        self.set_size(self._width,self._height)
+        self.InitGL(self._width, self._height)
+        #self.InitGL(1280, 1024)
         pyglet.clock.schedule_interval(self.update, 1/60.0) # update at 60Hz
         self.listId = 0
         self.angle = 0
@@ -327,17 +468,23 @@ class World(pyglet.window.Window):
 
         self.LightAmbient = self.vec(0.5, 0.5, 0.5, 1.0)
         self.LightDiffuse = self.vec(1., 1., 1., 1.0)
-        self.LightPosition = self.vec(0.0, 1.0, 2.0, 1.0 )
+        self.LightPosition = self.vec(0.0, 1.0, 2.0, 0.0 )
 
-        glLightfv(GL_LIGHT1, GL_AMBIENT, self.LightAmbient)  # add lighting. (ambient)
-        glLightfv(GL_LIGHT1, GL_DIFFUSE, self.LightDiffuse)  # add lighting. (diffuse).
-        glLightfv(GL_LIGHT1, GL_POSITION,self.LightPosition) # set light position.
+        glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.3, 0.3, 0.3, 1.0))  # add lighting. (ambient)
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.9, 0.9, 0.9, 1.0))  # add lighting. (diffuse).
+        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(1.0, 1.0, 1.5, 0.0)) # set light position.
+        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(0.0, 1.0, 2.0, 0.0)) # set light position.
+        glLightfv(GL_LIGHT1, GL_SPECULAR, self.vec(1.0, 1.0, 1.0, 1.0))
         glEnable(GL_LIGHT1)                             # turn light 1 on.
 
         #glEnable(GL_LIGHT0)                              #Quick And Dirty Lighting (Assumes Light0 Is Set Up)
         
         glEnable(GL_LIGHTING)                            #Enable Lighting
-        #glEnable(GL_COLOR_MATERIAL)                      #Enable Material Coloring'
+        glEnable(GL_COLOR_MATERIAL)                      #Enable Material Coloring'
+        
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, self.vec(0.5, 0.5, 0.5, 1.0))
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, self.vec(1, 1, 1, 1))
+        glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50)
 
         glEnable(GL_TEXTURE_2D)                     # Enable texture mapping.
         
@@ -515,6 +662,8 @@ class World(pyglet.window.Window):
         # Clear The Screen And The Depth Buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()                  # Reset The View
+        
+        glColor4f(0.8, 0.8, 0.8, .5)
 
         # Move Left 1.5 units and into the screen 6.0 units.
         glTranslatef(0, self.camHeight, self.camDistance)
@@ -602,9 +751,9 @@ class World(pyglet.window.Window):
         if symbol == key.DOWN:
             self.camDistance -= 1.0
         if symbol == key.PAGEUP:
-            self.camHeight += 1.0
-        if symbol == key.PAGEDOWN:
             self.camHeight -= 1.0
+        if symbol == key.PAGEDOWN:
+            self.camHeight += 1.0
 
 def word(long):
     s=''
