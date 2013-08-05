@@ -50,7 +50,7 @@ void main() {
     
     normalDirection = normalize(gl_NormalMatrix * gl_Normal);
     vec3 lightDir1 = normalize(vec3(gl_LightSource[1].position));
-    //lightDir1_ = -normalize(vec3(gl_ModelViewMatrix * gl_LightSource[1].position));
+    lightDir1_ = -normalize(vec3(gl_ModelViewMatrix * gl_LightSource[1].position));
     //lightDir1_ = lightDir1;
     //vec3 lightDirection = normalize(vec3(0.0, 1.0, 1.0));
     
@@ -66,7 +66,7 @@ void main() {
     vec3 vVertex = vec3(gl_ModelViewMatrix * gl_Vertex);
 
     //lightDir0 = vec3(gl_LightSource[0].position.xyz - vVertex) * TBNMatrix;
-    lightDir1_ = vec3(gl_LightSource[1].position.xyz - vVertex) * TBNMatrix;
+    //lightDir1_ = vec3(gl_LightSource[1].position.xyz - vVertex) * TBNMatrix;
     eyeVec    = -vVertex * TBNMatrix;
     
     //pt = gl_Vertex;
@@ -120,7 +120,7 @@ void main() {
 }
 '''])
 
-shader = Shader(['''
+shader1 = Shader(['''
 #version 120
 varying vec3 lightDir0, lightDir1, eyeVec;
 varying vec3 normal, tangent, binormal;
@@ -129,9 +129,9 @@ void main()
 {
 // Create the Texture Space Matrix
     normal   = normalize(gl_NormalMatrix * gl_Normal);
-        tangent  = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
-        binormal = cross(normal, tangent);
-   mat3 TBNMatrix = mat3(tangent, binormal, normal);
+    tangent  = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
+    binormal = cross(normal, tangent);
+    mat3 TBNMatrix = mat3(tangent, binormal, normal);
 
     vec3 vVertex = vec3(gl_ModelViewMatrix * gl_Vertex);
 
@@ -209,7 +209,7 @@ void main (void)
 #http://en.wikibooks.org/wiki/GLSL_Programming/Blender/Lighting_of_Bumpy_Surfaces
 shader = Shader(['''
 #version 120
-attribute vec4 tangent;
+//attribute vec4 tangent;
  
 varying mat3 localSurface2View; // mapping from 
    // local surface coordinates to view coordinates
@@ -217,17 +217,23 @@ varying vec4 texCoords; // texture coordinates
 varying vec4 position; // position in view coordinates
 
 void main()
-{                              
-    // the signs and whether tangent is in localSurface2View[1] 
-    // or localSurface2View[0] depends on the tangent 
-    // attribute, texture coordinates, and the encoding 
+{
+    //vec3 tangent = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5)); //maybe
+    //vec3 tangent = vec3(0,0,1);
+    vec3 tangent = normalize(cross(vec3(0,1,0), gl_Normal.xyz));
+    // the signs and whether tangent is in localSurface2View[1]
+    // or localSurface2View[0] depends on the tangent
+    // attribute, texture coordinates, and the encoding
     // of the normal map 
-    localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix 
-       * vec4(vec3(tangent), 0.0)));
-    localSurface2View[2] = 
-       normalize(gl_NormalMatrix * gl_Normal);
-    localSurface2View[1] = normalize(
-       cross(localSurface2View[2], localSurface2View[0]));
+    //localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix * vec4(vec3(tangent), 0.0)));
+    //localSurface2View[0]= vec3(1,0,0);
+    //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
+    //localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
+    
+    localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
+    localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
+    localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
+    //mat3 TBNMatrix = mat3(tangent, binormal, normal);
     
     texCoords = gl_MultiTexCoord0;
     position = gl_ModelViewMatrix * gl_Vertex;            
@@ -242,6 +248,7 @@ varying vec4 position; // position in view coordinates
 
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
+uniform int toggletexture; // false/true
 
 void main()
 {
@@ -252,13 +259,17 @@ void main()
     // problems are small since we use this matrix only
     // to compute "normalDirection", which we normalize anyways
     
-    //vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords)); 
+    if (toggletexture == 0)
+        texColor = vec4(0.75, 0.75, 0.75, 1.0);//gl_FrontMaterial.ambient;
     
-    vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
-    //vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
+    vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords)); 
+    
+    //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
+    //vec3 localCoords   = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
+    //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
+    vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
        // constants depend on encoding 
-    vec3 normalDirection = 
-       normalize(localSurface2View * localCoords);
+    vec3 normalDirection = normalize(localSurface2View * localCoords);
     
     // Compute per-pixel Phong lighting with normalDirection
     
@@ -298,11 +309,11 @@ void main()
     }
     
     vec3 ambientLighting = vec3(gl_LightModel.ambient) 
-       * vec3(gl_FrontMaterial.emission);
+       * vec3(texColor);//* vec3(gl_FrontMaterial.emission);
     
     vec3 diffuseReflection = 1.//attenuation 
        * vec3(gl_LightSource[1].diffuse)
-       //* vec3(gl_FrontMaterial.emission)
+       * vec3(texColor)//* vec3(gl_FrontMaterial.emission)       
        * max(0.0, dot(normalDirection, lightDirection));
     
     vec3 specularReflection;
@@ -328,7 +339,8 @@ void main()
         diffuseReflection *
         1.0//vec3(texColor) // here?
         + specularReflection
-        , 1.0); 
+        , 1.0);
+     //gl_FragColor = vec4(vec3(texColor), 1.0);
 }
 '''])
 
@@ -424,8 +436,8 @@ class World(pyglet.window.Window):
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def setup(self):
-        self._width = 1024        
-        self._height = 768
+        self._width = 800        
+        self._height = 600
         self.set_size(self._width,self._height)
         self.InitGL(self._width, self._height)
         pyglet.clock.schedule_interval(self.update, 1/600.0) # update at 60Hz
@@ -524,7 +536,7 @@ class World(pyglet.window.Window):
         #imagedata = rawimage.get_data(rawimage._current_format, rawimage._current_pitch)
         #imagedata = texture.image_data._current_data
         imagedata2 = get_colors1(rawimage, 'RGBA', -rawimage._current_pitch)
-        print "%.3f get_data done" % time.clock()
+        print "%.3f ImageLoad done %s" % (time.clock(), filename)
         return MyImage(ix,iy,imagedata2,texture)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -932,11 +944,11 @@ class World(pyglet.window.Window):
         # Move Left 1.5 units and into the screen 6.0 units.
         glTranslatef(0, self.camHeight, self.camDistance)
         self.angle += self.rotateSpeed
-        #glRotatef(self.angle, 0, 1, 0)
+        glRotatef(self.angle, 0, 1, 0)
         
-        glRotatef(180, 0, 1, 0)
-        self.LightPosition = self.vec(math.cos(self.angle*3.14/180), 0.0, math.sin(self.angle*3.14/180), 0.0 )
-        glLightfv(GL_LIGHT1, GL_POSITION, self.LightPosition) # set light position.
+        #glRotatef(180, 0, 1, 0)
+        #self.LightPosition = self.vec(math.cos(self.angle*3.14/180), 0.0, math.sin(self.angle*3.14/180), 0.0 )
+        #glLightfv(GL_LIGHT1, GL_POSITION, self.LightPosition) # set light position.
 
 #       glBindTexture(GL_TEXTURE_2D, idTexture.value)
         glColor4f(0.8, 0.8, 0.8, .5)
