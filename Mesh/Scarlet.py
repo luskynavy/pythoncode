@@ -423,7 +423,7 @@ class World(pyglet.window.Window):
         self.set_size(self._width,self._height)
         self.InitGL(self._width, self._height)
         #self.InitGL(1280, 1024)
-        pyglet.clock.schedule_interval(self.update, 1/60.0) # update at 60Hz
+        pyglet.clock.schedule_interval(self.update, 1/6000.0) # update at 60Hz
         self.listId = 0
         self.angle = 0
         self.DisplayGlTriangles()
@@ -433,6 +433,10 @@ class World(pyglet.window.Window):
         self.normalMapOn = 0
         self.camHeight = -10.0
         self.camDistance = -25.0
+        self.set_vsync(False)
+        self.g_nFPS = 0
+        self.g_nFrames = 0                                        # FPS and FPS Counter
+        self.g_dwLastFPS = 0                                    # Last FPS Check Time
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def update(self,dt):
@@ -663,6 +667,18 @@ class World(pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # The main drawing function.
     def DrawGLScene(self):
+        milliseconds = time.clock () * 1000.0
+        if (milliseconds - self.g_dwLastFPS >= 1000):                    # // When A Second Has Passed...
+            # g_dwLastFPS = win32api.GetTickCount();                # // Update Our Time Variable
+            self.g_dwLastFPS = time.clock () * 1000.0
+            self.g_nFPS = self.g_nFrames;                                        # // Save The FPS
+            self.g_nFrames = 0;                                            # // Reset The FPS Counter
+            # // Build The Title String
+            szTitle = "%d FPS"  % self.g_nFPS;
+            self.set_caption(szTitle)
+            
+        self.g_nFrames += 1                                                 # // Increment Our FPS Counter
+        
         # Clear The Screen And The Depth Buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()                  # Reset The View
@@ -690,6 +706,22 @@ class World(pyglet.window.Window):
     
         #self.DisplayGlTriangles()
         glCallList(self.listId)
+        
+        '''glTranslatef(5,0,0)
+        
+        glCallList(self.listId)
+        
+        glTranslatef(5,0,0)
+        
+        glCallList(self.listId)
+        
+        glTranslatef(-15,0,0)
+        
+        glCallList(self.listId)
+        
+        glTranslatef(-5,0,0)
+        
+        glCallList(self.listId)'''
             
         if self.normalMapOn == 1:
             glActiveTexture(GL_TEXTURE1)
@@ -1056,3 +1088,4 @@ if __name__ == "__main__":
 
     window = World()
     pyglet.app.run()
+    

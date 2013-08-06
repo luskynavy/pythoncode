@@ -452,7 +452,7 @@ class World(pyglet.window.Window):
         self.g_dwLastFPS = 0                                    # Last FPS Check Time
         self.myimage1 = None
         self.texturesList = None
-        #self.set_vsync(False)
+        self.set_vsync(False)
         self.camHeight = -7.0
         self.camDistance = -20.0
 
@@ -934,11 +934,11 @@ class World(pyglet.window.Window):
             self.g_dwLastFPS = time.clock () * 1000.0
             self.g_nFPS = self.g_nFrames;                                        # // Save The FPS
             self.g_nFrames = 0;                                            # // Reset The FPS Counter
-        self.g_nFrames += 1                                                 # // Increment Our FPS Counter
-
-        # // Build The Title String
-        szTitle = "%d FPS"  % self.g_nFPS;
-        self.set_caption(szTitle)
+            # // Build The Title String
+            szTitle = "%d FPS"  % self.g_nFPS;
+            self.set_caption(szTitle)
+            
+        self.g_nFrames += 1                                                 # // Increment Our FPS Counter        
         
 #         global idTexture
         # Clear The Screen And The Depth Buffer
