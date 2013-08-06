@@ -51,7 +51,7 @@ model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_ClubDancer03
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/PC/DE/PT/DE_PT_N_05/DE_PT_N_05"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/PC/DE/PT/DE_PT_N_14/DE_PT_N_14"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Monica/NPC_Monica"
-#model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Sati/NPC_Sati"
+model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Sati/NPC_Sati"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Yuna/NPC_Yuna"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Auction/NPC_Auction"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Bartender/NPC_Bartender"
@@ -281,10 +281,11 @@ void main()
     
     vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords)); 
     
-    //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
-    //vec3 localCoords   = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
-    //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
-    vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
+    //vec3 localCoords = normalize( texture2D(normal_texture, vec2(texCoords)).rga * 2. - 1.);
+    //vec3 localCoords   = normalize( texture2D(normal_texture,vec2(texCoords)).rga); //almost no bump with 15 yellow
+    vec3 localCoords = normalize( texture2D(normal_texture, vec2(texCoords)).rga - 0.5);
+    //vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0));
+    //vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
        // constants depend on encoding 
     vec3 normalDirection = normalize(localSurface2View * localCoords);
     
@@ -522,7 +523,7 @@ class World(pyglet.window.Window):
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def LoadGLTextures(self):
-        global dirname
+        global dirname, basename
         #load color texture
         #self.myimage1 = self.ImageLoad("NPC_Gloria.bmp")
         #self.myimage1 = self.ImageLoad("NPC_Gloria.png")
@@ -530,13 +531,13 @@ class World(pyglet.window.Window):
         #self.myimage1 = self.ImageLoad("NPC_Yuna.png")
         #self.myimage1 = self.ImageLoad("NPC_Sati.png")        
         try:
-            self.myimage1 = self.ImageLoad(model + ".dds", True)
+            self.myimage1 = self.ImageLoad(model + '.dds', True)
         except:
             try:
-                self.myimage1 = self.ImageLoad(model + ".png")
+                self.myimage1 = self.ImageLoad(model + '.png')
             except:
-                try:                    
-                    self.myimage1 = self.ImageLoad(dirname + filename.split('\\')[-1].split('.')[0].replace('NPC_','') + ".dds", True)
+                try:
+                    self.myimage1 = self.ImageLoad(dirname + basename.split('.')[0].replace('NPC_','') + '.dds', True)
                 except:
                     self.myimage1 = None #self.ImageLoad("NPC_Gloria.png")        
 
@@ -554,13 +555,13 @@ class World(pyglet.window.Window):
             
         #load normal map
         try:
-            self.myimage2 = self.ImageLoad(model + "_NR.dds", True)
+            self.myimage2 = self.ImageLoad(model + '_NR.dds', True)
         except:
             try:
-                self.myimage2 = self.ImageLoad(model + "_NR.png")
+                self.myimage2 = self.ImageLoad(model + '_NR.png')
             except:
-                try:                    
-                    self.myimage2 = self.ImageLoad(dirname + filename.split('\\')[-1].split('.')[0].replace('NPC_','')+ "_NR.dds", True)
+                try:
+                    self.myimage2 = self.ImageLoad(dirname + basename.split('.')[0].replace('NPC_','') + '_NR.dds', True)                    
                 except:
                     self.myimage2 = None #self.ImageLoad("NPC_Gloria_NR.dds")
 
@@ -1019,13 +1020,14 @@ def build_mesh(num):
 
 ##################################main
 if __name__ == "__main__":
-    global plik,dirname#,basename
+    global plik,dirname,basename
     #global model_id
     
     if len(sys.argv) > 1:
         filename = sys.argv[1]
         filename.replace('\\', '/')
         dirname = os.path.dirname(filename)
+        basename = os.path.basename(filename)
         if dirname != '':
             dirname += '/'
         model = dirname + filename.split('\\')[-1].split('.')[0]
@@ -1035,6 +1037,7 @@ if __name__ == "__main__":
         #filename = "NPC_Sati.mesh"
         filename = model + ".mesh"
         dirname = os.path.dirname(filename)
+        basename = os.path.basename(filename)
         if dirname != '':
             dirname += '/'
         
