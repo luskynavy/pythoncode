@@ -514,6 +514,10 @@ class World(pyglet.window.Window):
         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50)
 
         glEnable(GL_TEXTURE_2D)                     # Enable texture mapping.
+        
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        
         # // Enable Pointers
         glEnableClientState(GL_VERTEX_ARRAY);                      # // Enable Vertex Arrays
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);               # // Enable Texture Coord Arrays
@@ -951,7 +955,7 @@ class World(pyglet.window.Window):
         #glLightfv(GL_LIGHT1, GL_POSITION, self.LightPosition) # set light position.
 
 #       glBindTexture(GL_TEXTURE_2D, idTexture.value)
-        glColor4f(0.8, 0.8, 0.8, .5)
+        glColor4f(0.8, 0.8, 0.8, 1.)
         
         #self.DrawOneMaterial()
         self.DrawMultipleMaterials()

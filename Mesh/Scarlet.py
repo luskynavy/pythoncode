@@ -489,6 +489,9 @@ class World(pyglet.window.Window):
 
         glEnable(GL_TEXTURE_2D)                     # Enable texture mapping.
         
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        
         info = gl_info.GLInfo()
         info.set_active_context()
         print info.get_version()
@@ -664,7 +667,7 @@ class World(pyglet.window.Window):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()                  # Reset The View
         
-        glColor4f(0.8, 0.8, 0.8, .5)
+        glColor4f(0.8, 0.8, 0.8, 1.)
 
         # Move Left 1.5 units and into the screen 6.0 units.
         glTranslatef(0, self.camHeight, self.camDistance)
