@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-#because these lessons sometimes need  openGL GLUT, you need to install
-#pyonlgl as well as pyglet, in order for this sample them to work
-#pyopengl ~ http://pyopengl.sourceforge.net
-#pyglet   ~ http://www.pyglet.org
 
 import numpy as np
 from itertools import izip
@@ -22,15 +18,21 @@ import struct
 #from pyglet.window import key
 #from OpenGL.GLUT import * #<<<==Needed for GLUT calls
 
+#import OpenGL.WGL.EXT.swap_control
+#import OpenGL.raw
+#import OpenGL
+#import OpenGL.WGL
+
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame#, pygame.image, pygame.key
 from pygame.locals import *
 #from opengl_tools import *
+from collections import namedtuple
 
 #from ctypes import *
 
-from shader import Shader
+#from shader import Shader
 
 #model = "NPC_Gloria"
 model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_ClubDancer03/NPC_ClubDancer03"
@@ -84,7 +86,8 @@ model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Sati/NPC_Sat
 
 
 
-shader = Shader(['''
+#shader = Shader([
+'''
 varying vec3 colorL;
 void main() {
 gl_TexCoord[0] = gl_MultiTexCoord0;
@@ -104,7 +107,9 @@ colorL = diffuseReflection;
 // Set the position of the current vertex
 gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
 }
-'''], ['''
+'''
+#], [
+'''
 varying vec3 colorL;
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
@@ -138,12 +143,13 @@ vec3 color = (toggletexture == 1
 // Set the output color of our current pixel
 gl_FragColor = vec4(color, 1.0);
 }
-'''])
+'''#])
 
 # create our Phong Shader by Jerome GUINOT aka 'JeGX' - jegx [at] ozone3d [dot] net
 # see http://www.ozone3d.net/tutorials/glsl_lighting_phong.php
 
-shader1 = Shader(['''
+#shader1 = Shader([
+'''
 #version 120
 varying vec3 lightDir0, lightDir1, eyeVec;
 varying vec3 normal, tangent, binormal;
@@ -165,7 +171,9 @@ void main()
     gl_Position = ftransform();
         gl_TexCoord[0]  = gl_TextureMatrix[0] * gl_MultiTexCoord0;
 }
-'''], ['''
+'''
+#], [
+'''
 #version 120
 varying vec3 normal, lightDir0, lightDir1, eyeVec;
 //uniform sampler2D my_color_texture[+str(texturecnt)+]; //0 = ColorMap, 1 = NormalMap
@@ -227,10 +235,11 @@ void main (void)
     //    discard;
     gl_FragColor = final_color;
 }
-'''])
+'''
+#])
 
 #http://en.wikibooks.org/wiki/GLSL_Programming/Blender/Lighting_of_Bumpy_Surfaces
-shader = Shader(['''
+vertex_shader = '''
 #version 120
 //attribute vec4 tangent;
  
@@ -262,7 +271,9 @@ void main()
     position = gl_ModelViewMatrix * gl_Vertex;            
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
 }
-'''], ['''
+'''
+
+fragment_shader = '''
 #version 120
 varying mat3 localSurface2View; // mapping from 
 // local surface coordinates to view coordinates
@@ -364,7 +375,59 @@ void main()
         , 1.0);
      //gl_FragColor = vec4(vec3(texColor), 1.0);
 }
-'''])
+'''
+
+ShaderProgram = namedtuple("ShaderProgram", "program uniforms attributes")
+
+def assemble_shader_program(
+        vertex_shader_source,
+        fragment_shader_source,
+        uniform_names,
+        attribute_names):
+    vertex_shader = make_shader(GL_VERTEX_SHADER, vertex_shader_source)
+    fragment_shader = make_shader(GL_FRAGMENT_SHADER, fragment_shader_source)
+    program = make_program(vertex_shader, fragment_shader)
+    return ShaderProgram(
+        program,
+        get_uniforms(program, uniform_names),
+        get_attributes(program, attribute_names))
+
+def get_uniforms(program, names):
+    return dict((name, glGetUniformLocation(program, name)) for name in names)
+
+
+def get_attributes(program, names):
+    return dict((name, glGetAttribLocation(program, name)) for name in names)
+
+
+def make_shader(shadertype, source):
+    shader = glCreateShader(shadertype)
+    glShaderSource(shader, source)
+    glCompileShader(shader)
+    retval = ctypes.c_uint(GL_UNSIGNED_INT)
+    glGetShaderiv(shader, GL_COMPILE_STATUS, retval)
+    if not retval:
+        print >> sys.stderr, "Failed to compile shader."
+        print glGetShaderInfoLog(shader)
+        glDeleteShader(shader)
+        raise Exception("Failed to compile shader.")
+    return shader
+
+
+def make_program(vertex_shader, fragment_shader):
+    program = glCreateProgram()
+    glAttachShader(program, vertex_shader)
+    glAttachShader(program, fragment_shader)
+    glLinkProgram(program)
+    retval = ctypes.c_int()
+    glGetProgramiv(program, GL_LINK_STATUS, retval)
+    if not retval:
+        print >> sys.stderr, "Failed to link shader program."
+        print glGetProgramInfoLog(program)
+        glDeleteProgram(program)
+        raise Exception("Failed to link shader program.")
+    return program
+
 
 def normalize_v3(arr):
     ''' Normalize a numpy array of 3 component vectors shape=(n,3) '''
@@ -505,14 +568,20 @@ class World(): #pyglet.window.Window):
         print info.get_vendor()
         print info.get_renderer()
         print 'GL_ARB_vertex_shader', info.have_extension('GL_ARB_vertex_shader')
-        print 'GL_UNIFORM_BUFFER', info.have_extension('GL_UNIFORM_BUFFER')'''
+        print 'GL_UNIFORM_BUFFER', info.have_extension('GL_UNIFORM_BUFFER')'''            
         
+        self.program = assemble_shader_program(vertex_shader, fragment_shader,
+                                          uniform_names=[
+                                            'color_texture',
+                                            'normal_texture',
+                                            'toggletexture'],
+                                          attribute_names=[])
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ImageLoad(self,filename,reverse=False):
         image = pygame.image.load(filename)
         pixels = pygame.image.tostring(image, "RGBA", True)
-        print len(pixels)
+        #print len(pixels)
         textureId = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, textureId)
         print "get_data done", time.clock()
@@ -687,6 +756,7 @@ class World(): #pyglet.window.Window):
             # // Build The Title String
             szTitle = "%d FPS"  % self.g_nFPS;
             pygame.display.set_caption(szTitle)
+            #print szTitle
             
         self.g_nFrames += 1                                                 # // Increment Our FPS Counter
 
@@ -707,13 +777,18 @@ class World(): #pyglet.window.Window):
         
         if self.myimage1 != None:
             glBindTexture(GL_TEXTURE_2D, self.myimage1.texturedata)
-        if self.normalMapOn == 1: 
-            shader.bind()
+        if self.normalMapOn == 1:
+            #shader.bind()
+            glUseProgram(self.program.program)
+            uniforms = self.program.uniforms             
             glActiveTexture(GL_TEXTURE0)
-            shader.uniformi('color_texture', 0)            
-            shader.uniformi('toggletexture', self.texturesOn)        
+            #shader.uniformi('color_texture', 0)
+            glUniform1i(uniforms['color_texture'], 0)
+            #shader.uniformi('toggletexture', self.texturesOn)
+            glUniform1i(uniforms['toggletexture'], self.texturesOn)        
             glActiveTexture(GL_TEXTURE1)
-            shader.uniformi('normal_texture', 1)
+            #shader.uniformi('normal_texture', 1)
+            glUniform1i(uniforms['normal_texture'], 1)
             if self.myimage2 != None:
                 glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata)        
     
@@ -740,8 +815,8 @@ class World(): #pyglet.window.Window):
             glActiveTexture(GL_TEXTURE1)
             glDisable(GL_TEXTURE_2D)
             glActiveTexture(GL_TEXTURE0)
-            shader.unbind()
-
+            #shader.unbind()
+            glUseProgram(0)
 
         # Since we have smooth color mode on, this will be great for the Phish Heads :-).
         # Draw a triangle
@@ -805,12 +880,12 @@ class World(): #pyglet.window.Window):
         if symbol == K_PAGEDOWN:
             self.camHeight += 1.0
                         
-    def make_resources(self):
+'''    def make_resources(self):
         resources = Resources()
         return resources
             
 class Resources(object):
-    pass
+    pass'''
 
 def word(long):
     s=''
@@ -1109,21 +1184,27 @@ if __name__ == "__main__":
     
     #pyglet.app.run()
     
-    video_flags = OPENGL|DOUBLEBUF|RESIZABLE
+    video_flags = OPENGL|DOUBLEBUF|RESIZABLE#|FULLSCREEN
     pygame.init()
     screen_dimensions = 800, 600
     surface = pygame.display.set_mode(screen_dimensions, video_flags)
+    #pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 1) #don't work
+    #wglext_arb.wglSwapIntervalEXT(0)
+    #glxext_arb.glXSwapIntervalSGI(0)
+    #OpenGL.raw._WGL_ARB.wglSwapIntervalEXT(0)
+    #OpenGL.WGL.EXT.swap_control.wglSwapIntervalEXT(1)
+    #OpenGL.raw.wglSwapIntervalEXT(0)
+    #OpenGL.WGL.wglSwapIntervalEXT(1)
     
     window = World()
-    resources = window.make_resources()
+    #resources = window.make_resources()    
     
-    frames = 0
+    '''frames = 0
     done = 0
     zoom = 1.0
     position = [256.0, 256.0]
     dragging = False
-    draglast = 0,0
-
+    draglast = 0,0'''
     
     while 1:
         event = pygame.event.poll()
@@ -1136,6 +1217,7 @@ if __name__ == "__main__":
         elif event.type == VIDEORESIZE:            
             window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
         window.DrawGLScene()
-        frames += 1
+        time.sleep(0.005)
+        #frames += 1
         
     pygame.quit()

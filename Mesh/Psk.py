@@ -1,10 +1,5 @@
 #!/usr/bin/env python
-#Psk.py
 
-#because these lessons sometimes need  openGL GLUT, you need to install
-#pyonlgl as well as pyglet, in order for this sample them to work
-#pyopengl ~ http://pyopengl.sourceforge.net
-#pyglet   ~ http://www.pyglet.org
 
 from PIL import Image
 

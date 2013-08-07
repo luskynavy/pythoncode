@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-#because these lessons sometimes need  openGL GLUT, you need to install
-#pyonlgl as well as pyglet, in order for this sample them to work
-#pyopengl ~ http://pyopengl.sourceforge.net
-#pyglet   ~ http://www.pyglet.org
 
 import numpy as np
 from itertools import izip
