@@ -6,7 +6,7 @@
 #pyopengl ~ http://pyopengl.sourceforge.net
 #pyglet   ~ http://www.pyglet.org
 
-from PIL import Image
+#from PIL import Image
 
 import numpy as np
 from itertools import izip
@@ -1645,7 +1645,7 @@ if __name__ == "__main__":
         elif event.type == VIDEORESIZE:            
             window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
         window.DrawGLScene()
-        #time.sleep(0.005)
+        time.sleep(0.005)
         #frames += 1
         
     pygame.quit()

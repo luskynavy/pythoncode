@@ -18,11 +18,17 @@ import struct
 #from pyglet.window import key
 #from OpenGL.GLUT import * #<<<==Needed for GLUT calls
 
+from PIL import Image
+import smc.freeimage as FIPY
+
 #import OpenGL.WGL.EXT.swap_control
+#import OpenGL.raw._WGL_ARB
+
+from OpenGL.WGL import *
+#from  OpenGL.raw._WGL_ARB import *
 #import OpenGL.raw
 #import OpenGL
 #import OpenGL.WGL
-
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame#, pygame.image, pygame.key
@@ -486,7 +492,7 @@ class World(): #pyglet.window.Window):
         self.setup()
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def setup(self):
+    def setup(self):        
         '''self._width = 800        
         self._height = 600
         self.set_size(self._width,self._height)'''
@@ -579,13 +585,17 @@ class World(): #pyglet.window.Window):
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ImageLoad(self,filename,reverse=False):
-        image = pygame.image.load(filename)
-        pixels = pygame.image.tostring(image, "RGBA", True)
+        image = FIPY.Image(filename)
+        pixels = image.getRaw()
+        print image.width,image.height, len(pixels)
+        #image = pygame.image.load(filename)
+        #pixels = pygame.image.tostring(image, "RGBA", True)
         #print len(pixels)
         textureId = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, textureId)
         print "get_data done", time.clock()
-        return MyImage(image.get_width(),image.get_height(),pixels,textureId)
+        #return MyImage(image.get_width(),image.get_height(),pixels,textureId)
+        return MyImage(image.width,image.height,pixels,textureId)
     
         '''pic = pyglet.image.load(filename) #, decoder=PNGImageDecoder())
         print "load done", time.clock()
@@ -637,7 +647,8 @@ class World(): #pyglet.window.Window):
 
             # 2d texture, level of detail 0 (normal), 3 components (red, green, blue), x size from image, y size from image,
             # border 0 (normal), rgb color data, unsigned byte data, and finally the data itself.
-            glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage1.x, self.myimage1.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage1.imagedata)
+            #glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage1.x, self.myimage1.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage1.imagedata)
+            glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage1.x, self.myimage1.y, 0, GL_BGRA, GL_UNSIGNED_BYTE, self.myimage1.imagedata)
             glBindTexture(GL_TEXTURE_2D, self.myimage1.texturedata)   # 2d texture (x and y size)
             
         #load normal map
@@ -658,7 +669,8 @@ class World(): #pyglet.window.Window):
             glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)  # cheap scaling when image bigger than texture
             glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)  # cheap scaling when image smalled than texture
                 
-            glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage2.x, self.myimage2.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage2.imagedata)
+            #glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage2.x, self.myimage2.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage2.imagedata)
+            glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage2.x, self.myimage2.y, 0, GL_BGRA, GL_UNSIGNED_BYTE, self.myimage2.imagedata)
             glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata)   # 2d texture (x and y size)
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1183,8 +1195,10 @@ if __name__ == "__main__":
 
     
     #pyglet.app.run()
+    #wglSwapIntervalEXT(0)
     
-    video_flags = OPENGL|DOUBLEBUF|RESIZABLE#|FULLSCREEN
+    
+    video_flags = HWSURFACE | OPENGL | DOUBLEBUF | RESIZABLE #| FULLSCREEN
     pygame.init()
     screen_dimensions = 800, 600
     surface = pygame.display.set_mode(screen_dimensions, video_flags)
@@ -1195,6 +1209,10 @@ if __name__ == "__main__":
     #OpenGL.WGL.EXT.swap_control.wglSwapIntervalEXT(1)
     #OpenGL.raw.wglSwapIntervalEXT(0)
     #OpenGL.WGL.wglSwapIntervalEXT(1)
+    
+    #wglSwapIntervalEXT(True)
+    #wglSwapIntervalEXT(0)
+    #wglext_arb.wglSwapIntervalEXT(0)
     
     window = World()
     #resources = window.make_resources()    
@@ -1217,7 +1235,7 @@ if __name__ == "__main__":
         elif event.type == VIDEORESIZE:            
             window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
         window.DrawGLScene()
-        time.sleep(0.005)
+        time.sleep(0.01)
         #frames += 1
         
     pygame.quit()

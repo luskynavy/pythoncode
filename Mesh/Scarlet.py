@@ -499,6 +499,7 @@ class World(pyglet.window.Window):
         print info.get_renderer()
         print 'GL_ARB_vertex_shader', info.have_extension('GL_ARB_vertex_shader')
         print 'GL_UNIFORM_BUFFER', info.have_extension('GL_UNIFORM_BUFFER')
+        print 'WGL_EXT_swap_control', info.have_extension('WGL_EXT_swap_control')
         
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
