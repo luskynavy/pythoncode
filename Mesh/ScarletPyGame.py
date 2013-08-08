@@ -502,15 +502,18 @@ class World(): #pyglet.window.Window):
         self.listId = 0
         self.angle = 0
         self.DisplayGlTriangles()
-        self.LoadGLTextures()
-        self.rotateSpeed = 1
+        self.LoadGLTextures()        
+        self.ROTATESPEED = 2                                #speed of rotation        
+        self.rotateSpeed = self.ROTATESPEED                      #actual rotation speed
         self.texturesOn = 1
         self.normalMapOn = 0
         self.camHeight = -10.0
+        self.camStrafe = 0.0
         self.camDistance = -25.0
         self.g_nFPS = 0
         self.g_nFrames = 0                                        # FPS and FPS Counter
         self.g_dwLastFPS = 0                                    # Last FPS Check Time
+        self.wantedFPS = 60.
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def update(self,dt):
@@ -582,6 +585,10 @@ class World(): #pyglet.window.Window):
                                             'normal_texture',
                                             'toggletexture'],
                                           attribute_names=[])
+        
+        bits = 0
+        bits = glGetIntegerv(GL_DEPTH_BITS)
+        print bits
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ImageLoad(self,filename,reverse=False):
@@ -759,10 +766,10 @@ class World(): #pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # The main drawing function.
     def DrawGLScene(self):
-        milliseconds = time.clock () * 1000.0
-        if (milliseconds - self.g_dwLastFPS >= 1000):                    # // When A Second Has Passed...
+        milliseconds = time.clock ()
+        if (milliseconds - self.g_dwLastFPS >= 1):                    # // When A Second Has Passed...
             # g_dwLastFPS = win32api.GetTickCount();                # // Update Our Time Variable
-            self.g_dwLastFPS = time.clock () * 1000.0
+            self.g_dwLastFPS = milliseconds
             self.g_nFPS = self.g_nFrames;                                        # // Save The FPS
             self.g_nFrames = 0;                                            # // Reset The FPS Counter            
             # // Build The Title String
@@ -781,7 +788,7 @@ class World(): #pyglet.window.Window):
         glColor4f(0.8, 0.8, 0.8, .5)
 
         # Move Left 1.5 units and into the screen 6.0 units.
-        glTranslatef(0, self.camHeight, self.camDistance)
+        glTranslatef(self.camStrafe, self.camHeight, self.camDistance)
         self.angle += self.rotateSpeed
         glRotatef(self.angle, 0, 1, 0)
 
@@ -806,23 +813,7 @@ class World(): #pyglet.window.Window):
     
         #self.DisplayGlTriangles()
         glCallList(self.listId)
-        
-        glTranslatef(5,0,0)
-        
-        '''glCallList(self.listId)
-        
-        glTranslatef(5,0,0)
-        
-        glCallList(self.listId)
-        
-        glTranslatef(-15,0,0)
-        
-        glCallList(self.listId)
-        
-        glTranslatef(-5,0,0)
-        
-        glCallList(self.listId)'''
-            
+                    
         if self.normalMapOn == 1:
             glActiveTexture(GL_TEXTURE1)
             glDisable(GL_TEXTURE_2D)
@@ -832,7 +823,7 @@ class World(): #pyglet.window.Window):
 
         # Since we have smooth color mode on, this will be great for the Phish Heads :-).
         # Draw a triangle
-        glBegin(GL_POLYGON)                 # Start drawing a polygon
+        '''glBegin(GL_POLYGON)                 # Start drawing a polygon
         glColor3f(1.0, 0.0, 0.0)            # Red
         glVertex3f(0.0, 1.0, 0.0)           # Top
         glColor3f(0.0, 1.0, 0.0)            # Green
@@ -851,25 +842,26 @@ class World(): #pyglet.window.Window):
         glVertex3f(1.0, 1.0, 0.0)           # Top Right
         glVertex3f(1.0, -1.0, 0.0)          # Bottom Right
         glVertex3f(-1.0, -1.0, 0.0)         # Bottom Left
-        glEnd()                             # We are done with the polygon
+        glEnd()                             # We are done with the polygon'''
         
 
         #  since this is double buffered, swap the buffers to display what just got drawn.
         #(pyglet provides the swap, so we dont use the swap here)
         #glutSwapBuffers()
         pygame.display.flip()
-
+        
+        milliseconds2 = time.clock () * 1.0        
+        if milliseconds2 - milliseconds < 1./self.wantedFPS:
+            time.sleep(1./self.wantedFPS - (milliseconds2 - milliseconds))
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def on_key_press(self, symbol):#, modifiers):
-        #if symbol == K_ESCAPE:
-        #    self.dispatch_event('on_close')
         #enable or disable rotation
         if symbol == K_SPACE:
-            if self.rotateSpeed == 1:
+            if self.rotateSpeed == self.ROTATESPEED:
                 self.rotateSpeed = 0
             else:
-                self.rotateSpeed = 1
+                self.rotateSpeed = self.ROTATESPEED
         #enable or disable textures
         if symbol == K_t:
             if self.texturesOn == 1:
@@ -887,18 +879,15 @@ class World(): #pyglet.window.Window):
             self.camDistance += 1.0
         if symbol == K_DOWN:
             self.camDistance -= 1.0
+        if symbol == K_LEFT:
+            self.camStrafe += 1.0
+        if symbol == K_RIGHT:
+            self.camStrafe -= 1.0
         if symbol == K_PAGEUP:
             self.camHeight -= 1.0
         if symbol == K_PAGEDOWN:
             self.camHeight += 1.0
                         
-'''    def make_resources(self):
-        resources = Resources()
-        return resources
-            
-class Resources(object):
-    pass'''
-
 def word(long):
     s=''
     for j in range(0,long):
@@ -1191,17 +1180,13 @@ if __name__ == "__main__":
     print 'nb vertex', len(vertexlist), ', nb face', len(faceslist), ', uv list', len(uvlist)
     #print vertexlist[0], faceslist[0], faceslist[0][0], faceslist[0][1], faceslist[0][2]
 #    print vertexlist[faceslist[0][0]][0], vertexlist[faceslist[0][0]][1], vertexlist[faceslist[0][0]][2]
-
-
     
-    #pyglet.app.run()
     #wglSwapIntervalEXT(0)
-    
     
     video_flags = HWSURFACE | OPENGL | DOUBLEBUF | RESIZABLE #| FULLSCREEN
     pygame.init()
     screen_dimensions = 800, 600
-    surface = pygame.display.set_mode(screen_dimensions, video_flags)
+    surface = pygame.display.set_mode(screen_dimensions, video_flags, 24)
     #pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 1) #don't work
     #wglext_arb.wglSwapIntervalEXT(0)
     #glxext_arb.glXSwapIntervalSGI(0)
@@ -1215,15 +1200,7 @@ if __name__ == "__main__":
     #wglext_arb.wglSwapIntervalEXT(0)
     
     window = World()
-    #resources = window.make_resources()    
-    
-    '''frames = 0
-    done = 0
-    zoom = 1.0
-    position = [256.0, 256.0]
-    dragging = False
-    draglast = 0,0'''
-    
+ 
     while 1:
         event = pygame.event.poll()
         #if event.type == NOEVENT:
@@ -1235,7 +1212,5 @@ if __name__ == "__main__":
         elif event.type == VIDEORESIZE:            
             window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
         window.DrawGLScene()
-        time.sleep(0.01)
-        #frames += 1
         
     pygame.quit()

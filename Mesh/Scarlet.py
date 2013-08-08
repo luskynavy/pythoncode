@@ -18,7 +18,7 @@ from pyglet.image.codecs.png import PNGImageDecoder
 from pyglet.window import key
 #from OpenGL.GLUT import * #<<<==Needed for GLUT calls
 
-#from ctypes import *
+from ctypes import *
 
 from shader import Shader
 
@@ -501,6 +501,9 @@ class World(pyglet.window.Window):
         print 'GL_UNIFORM_BUFFER', info.have_extension('GL_UNIFORM_BUFFER')
         print 'WGL_EXT_swap_control', info.have_extension('WGL_EXT_swap_control')
         
+        bits = c_int()
+        glGetIntegerv(GL_DEPTH_BITS, byref(bits))
+        print bits        
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ImageLoad(self,filename,reverse=False):

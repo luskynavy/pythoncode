@@ -35,6 +35,7 @@ from collections import namedtuple
 
 from ctypes import *
 
+
 #from shader import Shader
 
 ''' to test
@@ -504,26 +505,26 @@ class World(): #pyglet.window.Window):
         self.setup()
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def setup(self):
-        '''self._width = 800        
-        self._height = 600
-        self.set_size(self._width,self._height)'''
-        self.InitGL()#self._width, self._height)
+    def setup(self):        
+        self.InitGL()
         #pyglet.clock.schedule_interval(self.update, 1/600.0) # update at 60Hz'''
         self.listId = -1
         self.listIds = None
-        self.angle = 0        
-        self.rotateSpeed = 1
+        self.angle = 0
+        self.ROTATESPEED = 2                                #speed of rotation        
+        self.rotateSpeed = self.ROTATESPEED                      #actual rotation speed
         self.texturesOn = 1
         self.normalMapOn = 0
         self.g_nFPS = 0
-        self.g_nFrames = 0                                        # FPS and FPS Counter
-        self.g_dwLastFPS = 0                                    # Last FPS Check Time
+        self.g_nFrames = 0                                  # FPS and FPS Counter
+        self.g_dwLastFPS = 0                                # Last FPS Check Time
+        self.wantedFPS = 60.
         self.myimage1 = None
         self.texturesList = None
         #self.set_vsync(False)
         self.camHeight = -7.0
         self.camDistance = -20.0
+        self.camStrafe = 0.0
 
         print "%.3f setup end" % time.clock()
         
@@ -765,18 +766,8 @@ class World(): #pyglet.window.Window):
     def LoadGLTextures(self):
         global idTexture
         self.myimage1 = self.ImageLoad(dirname + "Batman_V3_Body_D.png") #good v Pierre _current_pitch    int: -6144
-#        self.myimage1 = self.ImageLoad(dirname + "Batman_V3_Body_D_.tga") #bad v Pierre _current_pitch    int: 6144
-#        self.myimage1 = self.ImageLoad(dirname + "Batman_V3_head_D.png")
-#        self.myimage1 = self.ImageLoad(dirname + "BodyNude_D.tga") #bad v Pierre _current_pitch    int: 6144
 
         #print "%.3f ImageLoaded" % time.clock()
-
-        #Batman_Masked_Face_D_Sick1
-        #Batman_Rabbit_Head_Eye_Glow_Alpha
-        #Batman_V3_Body_D
-        #Batman_V3_head_D
-        #Batman_Rabbit_Head_D
-        #V2_Batman_Cape_A2
 
 #         idTexture = GLuint()
 #         glGenTextures(1, byref(idTexture))
@@ -1024,14 +1015,13 @@ class World(): #pyglet.window.Window):
                 glUseProgram(0)
         ####### multiple materials method end #######
 
-
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # The main drawing function.
     def DrawGLScene(self):        
-        milliseconds = time.clock () * 1000.0
-        if (milliseconds - self.g_dwLastFPS >= 1000):                    # // When A Second Has Passed...
+        milliseconds = time.clock ()
+        if (milliseconds - self.g_dwLastFPS >= 1):                    # // When A Second Has Passed...
             # g_dwLastFPS = win32api.GetTickCount();                # // Update Our Time Variable
-            self.g_dwLastFPS = time.clock () * 1000.0
+            self.g_dwLastFPS = milliseconds
             self.g_nFPS = self.g_nFrames;                                        # // Save The FPS
             self.g_nFrames = 0;                                            # // Reset The FPS Counter
             # // Build The Title String
@@ -1047,7 +1037,7 @@ class World(): #pyglet.window.Window):
         glLoadIdentity()                  # Reset The View        
 
         # Move Left 1.5 units and into the screen 6.0 units.
-        glTranslatef(0, self.camHeight, self.camDistance)
+        glTranslatef(self.camStrafe, self.camHeight, self.camDistance)
         self.angle += self.rotateSpeed
         glRotatef(self.angle, 0, 1, 0)
         
@@ -1073,7 +1063,7 @@ class World(): #pyglet.window.Window):
         glNormal3f(0, .7, .7)
         glColor3f(0.0, 0.0, 1.0)            # Blue
         glVertex3f(-1.0, -1.0, 0.0)         # Bottom Left
-        glEnd()                             # We are done with the polygon'''
+        glEnd()                             # We are done with the polygon
 
         # Move Right 3.0 units.
         glTranslatef(3.0, 0.0, 0.0)
@@ -1085,13 +1075,17 @@ class World(): #pyglet.window.Window):
         glVertex3f(1.0, 1.0, 0.0)           # Top Right
         glVertex3f(1.0, -1.0, 0.0)          # Bottom Right
         glVertex3f(-1.0, -1.0, 0.0)         # Bottom Left
-        glEnd()                             # We are done with the polygon
+        glEnd()                             # We are done with the polygon'''
 
 
         #  since this is double buffered, swap the buffers to display what just got drawn.
         #(pyglet provides the swap, so we dont use the swap here)
         #glutSwapBuffers()
         pygame.display.flip()
+        
+        milliseconds2 = time.clock ()        
+        if milliseconds2 - milliseconds < 1./self.wantedFPS:
+            time.sleep(1./self.wantedFPS - (milliseconds2 - milliseconds))            
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def on_key_press(self, symbol):#, modifiers):
@@ -1099,10 +1093,10 @@ class World(): #pyglet.window.Window):
         #    self.dispatch_event('on_close')
         #enable or disable rotation
         if symbol == K_SPACE:
-            if self.rotateSpeed == 1:
+            if self.rotateSpeed == self.ROTATESPEED:
                 self.rotateSpeed = 0
             else:
-                self.rotateSpeed = 1
+                self.rotateSpeed = self.ROTATESPEED
         #enable or disable textures
         if symbol == K_t:
             if self.texturesOn == 1:
@@ -1120,6 +1114,10 @@ class World(): #pyglet.window.Window):
             self.camDistance += 1.0
         if symbol == K_DOWN:
             self.camDistance -= 1.0
+        if symbol == K_LEFT:
+            self.camStrafe += 1.0
+        if symbol == K_RIGHT:
+            self.camStrafe -= 1.0
         if symbol == K_PAGEUP:
             self.camHeight -= 1.0
         if symbol == K_PAGEDOWN:
@@ -1605,17 +1603,12 @@ if __name__ == "__main__":
 #    print 'nb vertex', len(vertexlist), ', nb face', len(faces), ', uv list', len(UVCoords), ', faceuv', len(faceuv), ', facemat', len(facemat)
 #    print vertexlist[0], faces[0], faces[1], faces[2]#, faces[0][0], faces[0][1], faces[0][2]
 #     print vertexlist[faces[0][0]][0], vertexlist[faces[0][0]][1], vertexlist[faces[0][0]][2]
-#    print faceuv[0]    
-
-    #window = World()    
-    #pyglet.app.run()
-    
-    
+#    print faceuv[0]
         
-    video_flags = OPENGL|DOUBLEBUF|RESIZABLE#|FULLSCREEN
+    video_flags = OPENGL|DOUBLEBUF|RESIZABLE|HWSURFACE#|FULLSCREEN
     pygame.init()
-    screen_dimensions = 800, 600
-    surface = pygame.display.set_mode(screen_dimensions, video_flags)
+    screen_dimensions = 800, 600    
+    surface = pygame.display.set_mode(screen_dimensions, video_flags, 24)
     #pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 1) #don't work
     #wglext_arb.wglSwapIntervalEXT(0)
     #glxext_arb.glXSwapIntervalSGI(0)
@@ -1625,14 +1618,8 @@ if __name__ == "__main__":
     #OpenGL.WGL.wglSwapIntervalEXT(1)
     
     window = World()
-    #resources = window.make_resources()    
     
-    '''frames = 0
-    done = 0
-    zoom = 1.0
-    position = [256.0, 256.0]
-    dragging = False
-    draglast = 0,0'''
+    window.ReSizeGLScene(*screen_dimensions)
     
     while 1:
         event = pygame.event.poll()
@@ -1642,10 +1629,16 @@ if __name__ == "__main__":
             break
         elif (event.type == KEYDOWN):
             window.on_key_press(event.key)
-        elif event.type == VIDEORESIZE:            
-            window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
+        elif event.type == VIDEORESIZE:
+            if sys.platform != 'win32':
+                #for linux
+                screen_dimensions = event.dict['size']
+                window.ReSizeGLScene(*screen_dimensions)
+                surface = pygame.display.set_mode(screen_dimensions, video_flags, 24)
+            else:
+                window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
         window.DrawGLScene()
-        time.sleep(0.005)
+        #time.sleep(0.005)
         #frames += 1
         
     pygame.quit()
