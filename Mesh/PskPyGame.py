@@ -1,10 +1,4 @@
 #!/usr/bin/env python
-#Psk.py
-
-#because these lessons sometimes need  openGL GLUT, you need to install
-#pyonlgl as well as pyglet, in order for this sample them to work
-#pyopengl ~ http://pyopengl.sourceforge.net
-#pyglet   ~ http://www.pyglet.org
 
 #from PIL import Image
 
@@ -16,27 +10,16 @@ import time
 import sys
 import os.path
 
-# import pyglet
-# import struct
 from struct import *
-'''from pyglet.gl import *
-from pyglet import image #<==for image calls
-#from pyglet.image.codecs.png import PNGImageDecoder
-#from pyglet.image.codecs.pil import PILImageDecoder
-from pyglet.window import key
-#from OpenGL.GLUT import * #<<<==Needed for GLUT calls'''
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame#, pygame.image, pygame.key
 from pygame.locals import *
-#from opengl_tools import *
+
 from collections import namedtuple
 
 from ctypes import *
-
-
-#from shader import Shader
 
 ''' to test
 https://svn.blender.org/svnroot/bf-blender/trunk/blender/source/blender/gpu/
@@ -46,188 +29,12 @@ https://svn.blender.org/svnroot/bf-blender/trunk/blender/source/blender/gpu/inte
 http://en.wikibooks.org/wiki/GLSL_Programming
 '''
 
-#shader = Shader([
-'''
-//varying vec4 pt;
-varying vec3 colorL, eyeVec, lightDir1_, normalDirection;
-//varying vec3 spec;
-void main() {
-    vec3 normal   = normalize(gl_NormalMatrix * gl_Normal);
-    vec3 tangent  = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
-    vec3 binormal = cross(normal, tangent);
-    mat3 TBNMatrix = mat3(tangent, binormal, normal);       
-    
-    normalDirection = normalize(gl_NormalMatrix * gl_Normal);
-    vec3 lightDir1 = normalize(vec3(gl_LightSource[1].position));
-    lightDir1_ = -normalize(vec3(gl_ModelViewMatrix * gl_LightSource[1].position));
-    //lightDir1_ = lightDir1;
-    //vec3 lightDirection = normalize(vec3(0.0, 1.0, 1.0));
-    
-    vec3 diffuseReflection = 
-       vec3(gl_LightSource[1].diffuse) 
-       * 1.0 //* vec3(gl_FrontMaterial.emission)
-       * max(0.0, dot(normalDirection, lightDir1));
-       //* dot(normalDirection, lightDirection);
-    
-    colorL = diffuseReflection;
-        
-    //eyeVec = -normalize(vec3(gl_ModelViewMatrix * gl_Vertex));
-    vec3 vVertex = vec3(gl_ModelViewMatrix * gl_Vertex);
-
-    //lightDir0 = vec3(gl_LightSource[0].position.xyz - vVertex) * TBNMatrix;
-    //lightDir1_ = vec3(gl_LightSource[1].position.xyz - vVertex) * TBNMatrix;
-    eyeVec    = -vVertex * TBNMatrix;
-    
-    //pt = gl_Vertex;
-    //pt.z /= 20.0;
-    //pt.z += 1.5;
-    
-    gl_TexCoord[0] = gl_MultiTexCoord0;
-    //gl_TexCoord[0]  = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-    
-    // Set the position of the current vertex
-    gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
-    //gl_Position = gl_ModelViewProjectionMatrix * pt;
-}
-'''
-#], [
-'''
-varying vec3 colorL;
-varying vec3 eyeVec, lightDir1_, normalDirection;
-uniform sampler2D color_texture;
-uniform sampler2D normal_texture;
-uniform int toggletexture; // false/true
-
-void main() {
-    
-    // Extract the normal from the normal map
-    vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
-    //vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb);
-    //vec3 normal = normalize(texture2D(normal_texture, gl_TexCoord[0].st).rgb - .5);    
-    
-    // Calculate the lighting diffuse value
-    //float diffuse = max(dot(normal, light_pos), 0.0);
-    float diffuse = dot(normal, colorL);
-    vec3 L1 = normalize(lightDir1_);
-    
-    vec3 color = (toggletexture == 1
-        //? diffuse/2.0 + texture2D(color_texture, gl_TexCoord[0].st).rgb/2.0
-        ? diffuse * texture2D(color_texture, gl_TexCoord[0].st).rgb
-        //: diffuse/2.0 + vec3(0.75, 0.75, 0.75)/2.0);
-        : diffuse * vec3(0.75, 0.75, 0.75));
-    //vec3 color = colorL * vec3(0.5, 0.5, 0.5);
-    
-    vec3 E = normalize(eyeVec);
-    //vec3 R = reflect(-L1, normalDirection);
-    vec3 R = reflect(-L1, normal);
-    float specular = pow( max(dot(R, E), 0.0),
-        gl_FrontMaterial.shininess );
-    color += vec3(gl_LightSource[1].specular) *
-        vec3(gl_FrontMaterial.specular) *
-        specular;
-
-    // Set the output color of our current pixel
-    gl_FragColor = vec4(color, 1.0);
-}
-'''
-#])
-
-#shader1 = Shader([
-'''
-#version 120
-varying vec3 lightDir0, lightDir1, eyeVec;
-varying vec3 normal, tangent, binormal;
-
-void main()
-{
-// Create the Texture Space Matrix
-    normal   = normalize(gl_NormalMatrix * gl_Normal);
-    tangent  = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
-    binormal = cross(normal, tangent);
-    mat3 TBNMatrix = mat3(tangent, binormal, normal);
-
-    vec3 vVertex = vec3(gl_ModelViewMatrix * gl_Vertex);
-
-    lightDir0 = vec3(gl_LightSource[0].position.xyz - vVertex) * TBNMatrix;
-    lightDir1 = vec3(gl_LightSource[1].position.xyz - vVertex) * TBNMatrix;
-    eyeVec    = -vVertex * TBNMatrix;
-
-    gl_Position =gl_ModelViewProjectionMatrix * gl_Vertex;
-    gl_TexCoord[0]  = gl_TextureMatrix[0] * gl_MultiTexCoord0;
-}
-'''
-#], [
-'''
-#version 120
-varying vec3 normal, lightDir0, lightDir1, eyeVec;
-//uniform sampler2D my_color_texture[+str(texturecnt)+]; //0 = ColorMap, 1 = NormalMap
-uniform sampler2D color_texture;
-uniform sampler2D normal_texture;
-uniform int toggletexture = 1; // false/true
-int togglebump = 1;    // false/true
-
-void main (void)
-{
-        vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
-        vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
-        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
-        //vec3 norm     = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
-
-        if ( toggletexture == 0 ) texColor = gl_FrontMaterial.ambient;
-        vec4 final_color = (gl_FrontLightModelProduct.sceneColor * vec4(texColor.rgb,1.0)) +
-        //vec4 final_color = (.3* vec4(texColor.rgb,1.0)) +
-    //(.3*gl_LightSource[0].ambient * vec4(texColor.rgb,1.0)) +
-    (gl_LightSource[1].ambient * vec4(texColor.rgb,1.0));
-
-    //vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 0.0, 1.0 );
-    vec3 N = (togglebump != 0) ? normalize(norm) : vec3(0.0, 1.0, 0.0 );
-    vec3 L0 = normalize(lightDir0);
-    vec3 L1 = normalize(lightDir1);
-
-    float lambertTerm0 = .0 * dot(N,L0);
-    float lambertTerm1 = 1. * dot(N,L1);
-
-    if(lambertTerm0 > 0.0)
-    {
-        final_color += gl_LightSource[0].diffuse *
-                       //gl_FrontMaterial.diffuse *
-                       lambertTerm0;
-
-        vec3 E = normalize(eyeVec);
-        vec3 R = reflect(-L0, N);
-        float specular = pow( max(dot(R, E), 0.0),
-                         gl_FrontMaterial.shininess );
-        final_color += gl_LightSource[0].specular *
-                       //gl_FrontMaterial.specular *
-                       specular;
-    }
-    if(lambertTerm1 > 0.0)
-    {
-        final_color += gl_LightSource[1].diffuse *
-                       gl_FrontMaterial.diffuse *
-                       lambertTerm1;
-
-        vec3 E = normalize(eyeVec);
-        vec3 R = reflect(-L1, N);
-        float specular = pow( max(dot(R, E), 0.0),
-                         gl_FrontMaterial.shininess );
-        final_color += gl_LightSource[1].specular *
-                       gl_FrontMaterial.specular *
-                       specular;
-    }
-    //if (final_color.r > 0.1)
-    //    discard;
-    gl_FragColor = final_color;
-}
-'''
-#])
-
 #http://en.wikibooks.org/wiki/GLSL_Programming/Blender/Lighting_of_Bumpy_Surfaces
 vertex_shader = '''
 #version 120
 //attribute vec4 tangent;
- 
-varying mat3 localSurface2View; // mapping from 
+
+varying mat3 localSurface2View; // mapping from
    // local surface coordinates to view coordinates
 varying vec4 texCoords; // texture coordinates
 varying vec4 position; // position in view coordinates
@@ -240,26 +47,26 @@ void main()
     // the signs and whether tangent is in localSurface2View[1]
     // or localSurface2View[0] depends on the tangent
     // attribute, texture coordinates, and the encoding
-    // of the normal map 
+    // of the normal map
     //localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix * vec4(vec3(tangent), 0.0)));
     //localSurface2View[0]= vec3(1,0,0);
     //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
     //localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
-    
+
     localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
     localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
     localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
     //mat3 TBNMatrix = mat3(tangent, binormal, normal);
-    
+
     texCoords = gl_MultiTexCoord0;
-    position = gl_ModelViewMatrix * gl_Vertex;            
+    position = gl_ModelViewMatrix * gl_Vertex;
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
 }
 '''
 
 fragment_shader = '''
 #version 120
-varying mat3 localSurface2View; // mapping from 
+varying mat3 localSurface2View; // mapping from
 // local surface coordinates to view coordinates
 varying vec4 texCoords; // texture coordinates
 varying vec4 position; // position in view coordinates
@@ -272,85 +79,85 @@ void main()
 {
     //vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
     vec4 texColor =  texture2D(color_texture, vec2(texCoords));
-    // in principle we have to normalize the columns of 
-    // "localSurface2View" again; however, the potential 
+    // in principle we have to normalize the columns of
+    // "localSurface2View" again; however, the potential
     // problems are small since we use this matrix only
     // to compute "normalDirection", which we normalize anyways
-    
+
     if (toggletexture == 0)
         texColor = vec4(0.75, 0.75, 0.75, 1.0);//gl_FrontMaterial.ambient;
-    
-    vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords)); 
-    
+
+    vec4 encodedNormal = texture2D(normal_texture, vec2(texCoords));
+
     //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
     //vec3 localCoords   = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
     //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
-    vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0)); 
-       // constants depend on encoding 
+    vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0));
+       // constants depend on encoding
     vec3 normalDirection = normalize(localSurface2View * localCoords);
-    
+
     // Compute per-pixel Phong lighting with normalDirection
-    
-    vec3 viewDirection = -normalize(vec3(position)); 
+
+    vec3 viewDirection = -normalize(vec3(position));
     vec3 lightDirection;
     float attenuation;
-    if (0.0 == gl_LightSource[1].position.w) 
+    if (0.0 == gl_LightSource[1].position.w)
        // directional light?
     {
        attenuation = 1.0; // no attenuation
-       lightDirection = 
+       lightDirection =
           normalize(vec3(gl_LightSource[1].position));
-    } 
-    else // point light or spotlight (or other kind of light) 
+    }
+    else // point light or spotlight (or other kind of light)
     {
-       vec3 positionToLightSource = 
+       vec3 positionToLightSource =
           vec3(gl_LightSource[1].position - position);
        float distance = length(positionToLightSource);
-       attenuation = 1.0 / distance; // linear attenuation 
+       attenuation = 1.0 / distance; // linear attenuation
        lightDirection = normalize(positionToLightSource);
-    
+
        if (gl_LightSource[1].spotCutoff <= 90.0) // spotlight?
        {
-          float clampedCosine = max(0.0, dot(-lightDirection, 
+          float clampedCosine = max(0.0, dot(-lightDirection,
              gl_LightSource[1].spotDirection));
-          if (clampedCosine < gl_LightSource[1].spotCosCutoff) 
+          if (clampedCosine < gl_LightSource[1].spotCosCutoff)
              // outside of spotlight cone?
           {
              attenuation = 0.0;
           }
           else
           {
-             attenuation = attenuation * pow(clampedCosine, 
-                gl_LightSource[1].spotExponent);   
+             attenuation = attenuation * pow(clampedCosine,
+                gl_LightSource[1].spotExponent);
           }
        }
     }
-    
-    vec3 ambientLighting = vec3(gl_LightModel.ambient) 
+
+    vec3 ambientLighting = vec3(gl_LightModel.ambient)
        * vec3(texColor);//* vec3(gl_FrontMaterial.emission);
-    
-    vec3 diffuseReflection = 1.//attenuation 
+
+    vec3 diffuseReflection = 1.//attenuation
        * vec3(gl_LightSource[1].diffuse)
-       * vec3(texColor)//* vec3(gl_FrontMaterial.emission)       
+       * vec3(texColor)//* vec3(gl_FrontMaterial.emission)
        * max(0.0, dot(normalDirection, lightDirection));
-    
+
     vec3 specularReflection;
-    if (dot(normalDirection, lightDirection) < 0.0) 
+    if (dot(normalDirection, lightDirection) < 0.0)
        // light source on the wrong side?
     {
-       specularReflection = vec3(0.0, 0.0, 0.0); 
+       specularReflection = vec3(0.0, 0.0, 0.0);
           // no specular reflection
     }
     else // light source on the right side
     {
-       specularReflection = attenuation 
-          * vec3(gl_LightSource[1].specular) 
-          * vec3(gl_FrontMaterial.specular) 
-          * pow(max(0.0, dot(reflect(-lightDirection, 
-          normalDirection), viewDirection)), 
+       specularReflection = attenuation
+          * vec3(gl_LightSource[1].specular)
+          * vec3(gl_FrontMaterial.specular)
+          * pow(max(0.0, dot(reflect(-lightDirection,
+          normalDirection), viewDirection)),
           gl_FrontMaterial.shininess);
     }
-    
+
     gl_FragColor = vec4(
         ambientLighting *
         1.0+//vec3(texColor) +// here?
@@ -362,6 +169,32 @@ void main()
 }
 '''
 
+vertex_shader1 ='''
+// Vertex program
+    varying vec3 normal;
+    void main() {
+        normal = gl_NormalMatrix * gl_Normal;
+        gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+    }
+'''
+
+fragment_shader1 ='''
+// Fragment program
+    varying vec3 normal;
+    void main() {
+        float intensity;
+        vec4 color;
+        vec3 n = normalize(normal);
+        vec3 l = normalize(gl_LightSource[0].position).xyz;
+
+        // quantize to 5 steps (0, .25, .5, .75 and 1)
+        intensity = (floor(dot(l, n) * 4.0) + 1.0)/4.0;
+        color = vec4(intensity*.5, intensity*0.5, intensity*0.5,
+            1.0);//intensity*1.0);
+
+        gl_FragColor = color;
+    }
+'''
 ShaderProgram = namedtuple("ShaderProgram", "program uniforms attributes")
 
 def assemble_shader_program(
@@ -419,10 +252,10 @@ def normalize_v3(arr):
     lens = np.sqrt( arr[:,0]**2 + arr[:,1]**2 + arr[:,2]**2 )
     arr[:,0] /= lens
     arr[:,1] /= lens
-    arr[:,2] /= lens                
+    arr[:,2] /= lens
     return arr
 
-def chunks(seq, n):
+'''def chunks(seq, n):
     return [seq[i:i+n] for i in range(0, len(seq), n)]
 
 def get_colors1(img, format, pitch, default_value=np.uint8(255)):
@@ -480,7 +313,7 @@ def get_colors(img, format, pitch, default_value='\xff'):
         print "%.3f swap done" % time.clock()
         res = ''.join(''.join(c) for c in izip(chunks(temp, img.width*4)[::-1]))
     return res
-
+'''
 
 ##################################MyImage
 class MyImage:
@@ -492,26 +325,19 @@ class MyImage:
         self.texturedata = texturedata
 
 ##################################World
-class World(): #pyglet.window.Window):
+class World():
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __init__(self):
-        '''config = Config(sample_buffers=1, samples=4,
-                    depth_size=16, double_buffer=True,)
-        try:
-            super(World, self).__init__(resizable=True, config=config)
-        except:
-            super(World, self).__init__(resizable=True)'''
         self.setup()
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def setup(self):        
+    def setup(self):
         self.InitGL()
-        #pyglet.clock.schedule_interval(self.update, 1/600.0) # update at 60Hz'''
         self.listId = -1
         self.listIds = None
         self.angle = 0
-        self.ROTATESPEED = 2                                #speed of rotation        
+        self.ROTATESPEED = 2                                #speed of rotation
         self.rotateSpeed = self.ROTATESPEED                      #actual rotation speed
         self.texturesOn = 1
         self.normalMapOn = 0
@@ -521,25 +347,11 @@ class World(): #pyglet.window.Window):
         self.wantedFPS = 60.
         self.myimage1 = None
         self.texturesList = None
-        #self.set_vsync(False)
         self.camHeight = -7.0
         self.camDistance = -20.0
         self.camStrafe = 0.0
 
         print "%.3f setup end" % time.clock()
-        
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def update(self,dt):
-        #self.DrawGLScene()
-        pass #don't call self.DrawGLScene since it's already called in on_draw
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def on_draw(self):
-        self.DrawGLScene()        
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def on_resize(self,w,h):
-        self.ReSizeGLScene(w,h)        
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def vec(self,*args):
@@ -549,7 +361,7 @@ class World(): #pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # A general OpenGL initialization function.  Sets all of the initial parameters.
     def InitGL(self):#,Width, Height):             # We call this right after our OpenGL window is created.
-        glClearColor(0.3, 0.3, 0.5, 0.0)       # This Will Clear The Background Color To Black        
+        glClearColor(0.3, 0.3, 0.5, 0.0)       # This Will Clear The Background Color To Black
         glClearDepth(1.0)                         # Enables Clearing Of The Depth Buffer
         glDepthFunc(GL_LESS)                      # The Type Of Depth Test To Do
         glEnable(GL_DEPTH_TEST)                 # Enables Depth Testing
@@ -557,16 +369,12 @@ class World(): #pyglet.window.Window):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()                          # Reset The Projection Matrix
                                                     # Calculate The Aspect Ratio Of The Window
-        #(pyglet initializes the screen so we ignore this call)
         #gluPerspective(45.0, float(Width)/float(Height), 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
 
         #glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )    #wireframe
         #glEnable(GL_CULL_FACE);
         #glCullFace(GL_FRONT) #or GL_BACK or even GL_FRONT_AND_BACK
-
-        
-        #self.LightPosition = self.vec(0.0, 1.0, 2.0, 1.0 )        
 
         glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.2, 0.2, 0.2, 1.0))  # add lighting. (ambient)
         glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.7, 0.7, 0.7, 1.0))  # add lighting. (diffuse).
@@ -575,24 +383,24 @@ class World(): #pyglet.window.Window):
         glEnable(GL_LIGHT1)                             # turn light 1 on.
 
         #glEnable(GL_LIGHT0)                              #Quick And Dirty Lighting (Assumes Light0 Is Set Up)
-        
+
         glEnable(GL_LIGHTING)                            #Enable Lighting
         glEnable(GL_COLOR_MATERIAL)                      #Enable Material Coloring'
-        
+
         glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, self.vec(0.5, 0.5, 0.5, 1.0))
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, self.vec(1, 1, 1, 1))
         glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50)
 
         glEnable(GL_TEXTURE_2D)                     # Enable texture mapping.
-        
+
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        
+
         # // Enable Pointers
         glEnableClientState(GL_VERTEX_ARRAY);                      # // Enable Vertex Arrays
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);               # // Enable Texture Coord Arrays
         glEnableClientState(GL_NORMAL_ARRAY);                      # // Enable Normal Arrays
-        
+
         self.program = assemble_shader_program(vertex_shader, fragment_shader,
                                           uniform_names=[
                                             'color_texture',
@@ -607,26 +415,8 @@ class World(): #pyglet.window.Window):
         #print len(pixels)
         textureId = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, textureId)
-        print "%.3f ImageLoad done %s" % (time.clock(), filename)
+        print "%.3f ImageLoaded %s" % (time.clock(), filename)
         return MyImage(image.get_width(), image.get_height(), pixels,textureId)
-    
-        '''pic = pyglet.image.load(filename) #, decoder=PNGImageDecoder())
-        #print "%.3f load done" % time.clock()
-        texture = pic.get_texture()
-        #print "%.3f get_texture done" % time.clock()
-        ix = pic.width
-        iy = pic.height
-        rawimage = pic.get_image_data()
-        #print "%.3f get_image_data done" % time.clock()
-        #format = 'RGBA' #'RGB' #'RGBA'
-#         pitch = rawimage.width * len(format)
-        #print pitch
-        #imagedata2 = rawimage.get_data(format, -pitch)
-        #imagedata = rawimage.get_data(rawimage._current_format, rawimage._current_pitch)
-        #imagedata = texture.image_data._current_data
-        imagedata2 = get_colors1(rawimage, 'RGBA', -rawimage._current_pitch)
-        print "%.3f ImageLoad done %s" % (time.clock(), filename)
-        return MyImage(ix,iy,imagedata2,texture)'''
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ImageLoadPil(self,filename):
@@ -645,26 +435,26 @@ class World(): #pyglet.window.Window):
         global matlist, faceByMat, faceByMatUV
         faceByMat = []
         faceByMatUV = []
-        
+
         for m in xrange(0, len(matlist)):
             faceByMat.append([])
             faceByMatUV.append([])
-        
+
         for f in xrange(0, len(facemat)):
             faceByMat[facemat[f]].append(faceslist[f])
             faceByMatUV[facemat[f]].append(faceuv[f])
-            
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def CreateDisplayLists(self):
         global faceByMat, faceByMatUV
-        
+
         self.listIds = []
-        
+
         for f in xrange(len(faceByMat)):
             #prepare arrays
             vertices = np.array(vertexlist)
             nfaces = np.array(faceByMat[f])
-            #tri_index = nfaces.reshape( len(nfaces) * 3) 
+            #tri_index = nfaces.reshape( len(nfaces) * 3)
             '''var = vertices[nfaces]
             #var = vertices[tri_index]
             var1 = var.reshape( -1)
@@ -672,40 +462,40 @@ class World(): #pyglet.window.Window):
             #vertices_gl = (GLfloat * len(vertexlist))(*vertexlist)
             #glVertexPointer(3, GL_FLOAT, 0, vertices_gl)
             #glVertexPointer(3, GL_FLOAT, 0, var1.tostring())
-            
-            vavertices = []        
-            for k in xrange(0, len(var1)): 
+
+            vavertices = []
+            for k in xrange(0, len(var1)):
                 vavertices.append(var1[k])
-            
+
             vavertices_gl = (GLfloat * len(vavertices))(*vavertices)
-                    
-            nfaceuv = np.array(faceuv)         
+
+            nfaceuv = np.array(faceuv)
             var1 = nfaceuv.reshape( -1)
-            
+
             vauv = []
-            for k in xrange(0, len(var1)): 
+            for k in xrange(0, len(var1)):
                 vauv.append(var1[k])
-            
+
             vauv_gl = (GLfloat * len(vauv))(*vauv)'''
-            
+
             print "%.3f before normals compute" % time.clock()
             #Create a zeroed array with the same type and shape as our vertices i.e., per vertex normal
             norm = np.zeros( vertices.shape, dtype=vertices.dtype )
             #Create an indexed view into the vertex array using the array of three indices for triangles
             tris = vertices[nfaces]
-            #Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0, and v2-v0 in each triangle             
+            #Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0, and v2-v0 in each triangle
             #n = np.cross( tris[::,1 ] - tris[::,0]  , tris[::,2 ] - tris[::,0] )# n is now an array of normals per triangle. The length of each normal is dependent the vertices,
             n = np.cross( tris[::,2 ] - tris[::,0]  , tris[::,1 ] - tris[::,0] )# n is now an array of normals per triangle. The length of each normal is dependent the vertices,
-            # we need to normalize these, so that our next step weights each normal equally.normalize_v3(n)        
+            # we need to normalize these, so that our next step weights each normal equally.normalize_v3(n)
             # now we have a normalized array of normals, one per triangle, i.e., per triangle normals.
-            # But instead of one per triangle (i.e., flat shading), we add to each vertex in that triangle, 
+            # But instead of one per triangle (i.e., flat shading), we add to each vertex in that triangle,
             # the triangles' normal. Multiple triangles would then contribute to every vertex, so we need to normalize again afterwards.
             # The cool part, we can actually add the normals through an indexed view of our (zeroed) per vertex normal array
             norm[ nfaces[:,0] ] += n
             norm[ nfaces[:,1] ] += n
             norm[ nfaces[:,2] ] += n
             normalize_v3(norm)
-            
+
             self.listIds.append(glGenLists(1))                # Generate 2 Different Lists
             glNewList(self.listIds[f], GL_COMPILE)      # Start With The Box List
             #glColor3f(0.85, 0.75, 0.7)
@@ -720,58 +510,51 @@ class World(): #pyglet.window.Window):
                 x3 = vertexlist[faceByMat[f][k][2]][0]
                 y3 = vertexlist[faceByMat[f][k][2]][1]
                 z3 = vertexlist[faceByMat[f][k][2]][2]
-                
+
                 glNormal3f(norm[faceByMat[f][k][0]][0], norm[faceByMat[f][k][0]][1], norm[faceByMat[f][k][0]][2]);
-                glTexCoord2f(faceByMatUV[f][k][0][0], faceByMatUV[f][k][0][1])            
+                glTexCoord2f(faceByMatUV[f][k][0][0], faceByMatUV[f][k][0][1])
                 glVertex3f(x1, y1, z1)
-                
+
                 glNormal3f(norm[faceByMat[f][k][1]][0], norm[faceByMat[f][k][1]][1], norm[faceByMat[f][k][1]][2]);
                 glTexCoord2f(faceByMatUV[f][k][1][0], faceByMatUV[f][k][1][1])
                 glVertex3f(x2, y2, z2)
-    
+
                 glNormal3f(norm[faceByMat[f][k][2]][0], norm[faceByMat[f][k][2]][1], norm[faceByMat[f][k][2]][2]);
-                glTexCoord2f(faceByMatUV[f][k][2][0], faceByMatUV[f][k][2][1])            
-                glVertex3f(x3, y3, z3)            
+                glTexCoord2f(faceByMatUV[f][k][2][0], faceByMatUV[f][k][2][1])
+                glVertex3f(x3, y3, z3)
             glEnd()
             glEndList();
 
-        
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def LoadMaterials(self):        
-        global matlist, dirname        
-        
+    def LoadMaterials(self):
+        global matlist, dirname
+
         self.texturesList = []
-        
+
         for i in matlist:
             diffuse = None
             if i[0] != '':
                 diffuse = self.ImageLoad(dirname + i[0])
                 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
                 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
-        
+
                 glTexImage2D(GL_TEXTURE_2D, 0, 4, diffuse.x, diffuse.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, diffuse.imagedata)
                 glBindTexture(GL_TEXTURE_2D, diffuse.texturedata)
-            
+
             normal = None
             if i[1] != '':
                 normal = self.ImageLoad(dirname + i[1])
                 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
                 glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
-        
+
                 glTexImage2D(GL_TEXTURE_2D, 0, 4, normal.x, normal.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, normal.imagedata)
                 glBindTexture(GL_TEXTURE_2D, normal.texturedata)
             self.texturesList.append([diffuse, normal])
-        
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def LoadGLTextures(self):
-        global idTexture
         self.myimage1 = self.ImageLoad(dirname + "Batman_V3_Body_D.png") #good v Pierre _current_pitch    int: -6144
-
-        #print "%.3f ImageLoaded" % time.clock()
-
-#         idTexture = GLuint()
-#         glGenTextures(1, byref(idTexture))
-#         glBindTexture(GL_TEXTURE_2D, idTexture.value)
 
         # texture 1 (poor quality scaling)
         glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
@@ -781,10 +564,12 @@ class World(): #pyglet.window.Window):
         # border 0 (normal), rgb color data, unsigned byte data, and finally the data itself.
         glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage1.x, self.myimage1.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage1.imagedata)
         glBindTexture(GL_TEXTURE_2D, self.myimage1.texturedata)   # 2d texture (x and y size)
-        #glBindTexture(GL_TEXTURE_2D, idTexture.value)   # 2d texture (x and y size)
-        
+
         self.myimage2 = self.ImageLoad(dirname + "Batman_V3_Body_N.tga") #good v Pierre _current_pitch    int: -6144
-        
+
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR)
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR)
+
         glTexImage2D(GL_TEXTURE_2D, 0, 4, self.myimage2.x, self.myimage2.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, self.myimage2.imagedata)
         glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata)   # 2d texture (x and y size)
 
@@ -802,11 +587,11 @@ class World(): #pyglet.window.Window):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def CreateDisplayList(self):
         global vavertices, vavertices_gl, var1, vauv, vauv_gl, vanorm, vanorm_gl
-        
+
         #prepare arrays
         vertices = np.array(vertexlist)
         nfaces = np.array(faceslist)
-        #tri_index = nfaces.reshape( len(nfaces) * 3) 
+        #tri_index = nfaces.reshape( len(nfaces) * 3)
         var = vertices[nfaces]
         #var = vertices[tri_index]
         var1 = var.reshape( -1)
@@ -814,59 +599,57 @@ class World(): #pyglet.window.Window):
         #vertices_gl = (GLfloat * len(vertexlist))(*vertexlist)
         #glVertexPointer(3, GL_FLOAT, 0, vertices_gl)
         #glVertexPointer(3, GL_FLOAT, 0, var1.tostring())
-        
-        vavertices = []        
-        for k in xrange(0, len(var1)): 
+
+        vavertices = []
+        for k in xrange(0, len(var1)):
             vavertices.append(var1[k])
-        
-        vavertices_gl = (GLfloat * len(vavertices))(*vavertices)
-                
-        nfaceuv = np.array(faceuv)         
+
+        vavertices_gl = vavertices
+
+        nfaceuv = np.array(faceuv)
         var1 = nfaceuv.reshape( -1)
-        
+
         vauv = []
-        for k in xrange(0, len(var1)): 
+        for k in xrange(0, len(var1)):
             vauv.append(var1[k])
-        
-        vauv_gl = (GLfloat * len(vauv))(*vauv)
-        
+
+        vauv_gl = vauv
+
         print "%.3f before normals compute" % time.clock()
         #Create a zeroed array with the same type and shape as our vertices i.e., per vertex normal
         norm = np.zeros( vertices.shape, dtype=vertices.dtype )
         #Create an indexed view into the vertex array using the array of three indices for triangles
         tris = vertices[nfaces]
-        #Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0, and v2-v0 in each triangle             
+        #Calculate the normal for all the triangles, by taking the cross product of the vectors v1-v0, and v2-v0 in each triangle
         #n = np.cross( tris[::,1 ] - tris[::,0]  , tris[::,2 ] - tris[::,0] )# n is now an array of normals per triangle. The length of each normal is dependent the vertices,
         n = np.cross( tris[::,2 ] - tris[::,0]  , tris[::,1 ] - tris[::,0] )# n is now an array of normals per triangle. The length of each normal is dependent the vertices,
-        # we need to normalize these, so that our next step weights each normal equally.normalize_v3(n)        
+        # we need to normalize these, so that our next step weights each normal equally.normalize_v3(n)
         # now we have a normalized array of normals, one per triangle, i.e., per triangle normals.
-        # But instead of one per triangle (i.e., flat shading), we add to each vertex in that triangle, 
+        # But instead of one per triangle (i.e., flat shading), we add to each vertex in that triangle,
         # the triangles' normal. Multiple triangles would then contribute to every vertex, so we need to normalize again afterwards.
         # The cool part, we can actually add the normals through an indexed view of our (zeroed) per vertex normal array
         norm[ nfaces[:,0] ] += n
         norm[ nfaces[:,1] ] += n
         norm[ nfaces[:,2] ] += n
         normalize_v3(norm)
-        
+
         norm1 = norm[nfaces]
-        
+
         var1 = norm1.reshape( -1)
-        
+
         vanorm = []
-        for k in xrange(0, len(var1)): 
+        for k in xrange(0, len(var1)):
             vanorm.append(var1[k])
-        
-        vanorm_gl = (GLfloat * len(vanorm))(*vanorm)
-        
+
+        vanorm_gl = vanorm
+
         print "%.3f after normals compute" % time.clock()
-        
+
         #prepare display list
         self.listId = glGenLists(1)                # Generate 2 Different Lists
         glNewList(self.listId,GL_COMPILE)      # Start With The Box List
-        #glColor3f(0.85, 0.75, 0.7)
         glBegin(GL_TRIANGLES)
         for k in xrange(0, len(faceslist)):
-            #normal by face
             x1 = vertexlist[faceslist[k][0]][0]
             y1 = vertexlist[faceslist[k][0]][1]
             z1 = vertexlist[faceslist[k][0]][2]
@@ -909,21 +692,18 @@ class World(): #pyglet.window.Window):
             #glNormal3f(*n)
             glNormal3f(norm[faceslist[k][0]][0], norm[faceslist[k][0]][1], norm[faceslist[k][0]][2]);
             glTexCoord2f(faceuv[k][0][0], faceuv[k][0][1])
-            #glColor3f(0.85, 0.75, 0.7)
             glVertex3f(x1, y1, z1)
             #glVertex3f(*p1)
 
             #glNormal3f( nx, ny, nz)
             glNormal3f(norm[faceslist[k][1]][0], norm[faceslist[k][1]][1], norm[faceslist[k][1]][2]);
             glTexCoord2f(faceuv[k][1][0], faceuv[k][1][1])
-            #glColor3f(1, 0.66, 0.67)
             glVertex3f(x2, y2, z2)
             #glVertex3f(*p2)
 
             #glNormal3f( nx, ny, nz)
             glNormal3f(norm[faceslist[k][2]][0], norm[faceslist[k][2]][1], norm[faceslist[k][2]][2]);
             glTexCoord2f(faceuv[k][2][0], faceuv[k][2][1])
-            #glColor3f(0.75, 0.65, 0.6)
             glVertex3f(x3, y3, z3)
             #glVertex3f(*p3)
         glEnd()
@@ -933,7 +713,7 @@ class World(): #pyglet.window.Window):
     # Display using only one material
     def DrawOneMaterial(self):
         global vavertices, vavertices_gl, var1, vauv, vauv_gl, vanorm, vanorm_gl
-        
+
         if self.myimage1 == None:
             self.CreateDisplayList()
             print "%.3f after display list" % time.clock()
@@ -942,115 +722,101 @@ class World(): #pyglet.window.Window):
             glVertexPointer(3, GL_FLOAT, 0, vavertices_gl)
             glTexCoordPointer(2, GL_FLOAT, 0, vauv_gl)
             glNormalPointer(GL_FLOAT, 0, vanorm_gl)
-        
+
         ####### one material method #######
         glBindTexture(GL_TEXTURE_2D, self.myimage1.texturedata)
         if self.normalMapOn == 1:
-            #shader.bind()
             glUseProgram(self.program.program)
             uniforms = self.program.uniforms
             glActiveTexture(GL_TEXTURE0)
-            #shader.uniformi('color_texture', 0)
             glUniform1i(uniforms['color_texture'], 0)
-            #shader.uniformi('toggletexture', self.texturesOn)
-            glUniform1i(uniforms['toggletexture'], self.texturesOn)        
+            glUniform1i(uniforms['toggletexture'], self.texturesOn)
             glActiveTexture(GL_TEXTURE1)
-            #shader.uniformi('normal_texture', 1)
             glUniform1i(uniforms['normal_texture'], 1)
             if self.myimage2 != None:
                 glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata)
-        
+
         glCallList(self.listId)
 
         #glDrawArrays(GL_TRIANGLES, 0, len(vavertices) // 3)
-        #glVertexPointer(3, GL_FLOAT, 0, var1.tostring())
-        
+
         if self.normalMapOn == 1:
             glActiveTexture(GL_TEXTURE1)
             glDisable(GL_TEXTURE_2D)
             glActiveTexture(GL_TEXTURE0)
             #glDisable(GL_TEXTURE_2D)
             glUseProgram(0)
-            #shader.unbind()            
         ####### one material method end #######
-        
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Display using only one material
-    def DrawMultipleMaterials(self):        
+    def DrawMultipleMaterials(self):
         if self.texturesList == None:
             self.ArrangeMaterials()
             self.CreateDisplayLists()
             print "%.3f after display list" % time.clock()
             self.LoadMaterials()
             print "%.3f after texture loading" % time.clock()
-        
+
         ####### multiple materials method #######
         for m in xrange(len(self.listIds)):
             if self.texturesList[m][0] != None:
-                glBindTexture(GL_TEXTURE_2D, self.texturesList[m][0].texturedata)            
+                glBindTexture(GL_TEXTURE_2D, self.texturesList[m][0].texturedata)
             if self.normalMapOn == 1:
-                #shader.bind()
                 glUseProgram(self.program.program)
                 uniforms = self.program.uniforms
-                #shader.uniformi('toggletexture', self.texturesOn)
-                glUniform1i(uniforms['toggletexture'], self.texturesOn)                                
+                glUniform1i(uniforms['toggletexture'], self.texturesOn)
                 glActiveTexture(GL_TEXTURE0)
-                #shader.uniformi('color_texture', 0)
                 glUniform1i(uniforms['color_texture'], 0)
                 glActiveTexture(GL_TEXTURE1)
-                #shader.uniformi('normal_texture', 1)
                 glUniform1i(uniforms['normal_texture'], 1)
-                #glBindTexture(GL_TEXTURE_2D, self.myimage2.texturedata.id)
                 if self.texturesList[m][1] != None:
                     glBindTexture(GL_TEXTURE_2D, self.texturesList[m][1].texturedata)
-            
+
             glCallList(self.listIds[m])
-            
+
             if self.normalMapOn == 1:
                 glActiveTexture(GL_TEXTURE1)
                 glDisable(GL_TEXTURE_2D)
                 glActiveTexture(GL_TEXTURE0)
-                #glDisable(GL_TEXTURE_2D)            
-                #shader.unbind()
+                #glDisable(GL_TEXTURE_2D)
+
                 glUseProgram(0)
         ####### multiple materials method end #######
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # The main drawing function.
-    def DrawGLScene(self):        
+    def DrawGLScene(self):
         milliseconds = time.clock ()
         if (milliseconds - self.g_dwLastFPS >= 1):                    # // When A Second Has Passed...
             # g_dwLastFPS = win32api.GetTickCount();                # // Update Our Time Variable
             self.g_dwLastFPS = milliseconds
             self.g_nFPS = self.g_nFrames;                                        # // Save The FPS
             self.g_nFrames = 0;                                            # // Reset The FPS Counter
-            # // Build The Title String
+            # Build The Title String
             szTitle = "%d FPS"  % self.g_nFPS;
-            #self.set_caption(szTitle)
             pygame.display.set_caption(szTitle)
-            
-        self.g_nFrames += 1                                                 # // Increment Our FPS Counter        
-        
-#         global idTexture
+
+        self.g_nFrames += 1                                                 # // Increment Our FPS Counter
+
         # Clear The Screen And The Depth Buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()                  # Reset The View        
+        glLoadIdentity()                  # Reset The View
 
         # Move Left 1.5 units and into the screen 6.0 units.
         glTranslatef(self.camStrafe, self.camHeight, self.camDistance)
         self.angle += self.rotateSpeed
         glRotatef(self.angle, 0, 1, 0)
-        
+
         #glRotatef(180, 0, 1, 0)
         #self.LightPosition = self.vec(math.cos(self.angle*3.14/180), 0.0, math.sin(self.angle*3.14/180), 0.0 )
         #glLightfv(GL_LIGHT1, GL_POSITION, self.LightPosition) # set light position.
 
-#       glBindTexture(GL_TEXTURE_2D, idTexture.value)
         glColor4f(0.8, 0.8, 0.8, 1.)
-        
+
         #self.DrawOneMaterial()
         self.DrawMultipleMaterials()
-        
+
         # Since we have smooth color mode on, this will be great for the Phish Heads :-).
                 # Draw a triangle
         '''glBegin(GL_POLYGON)                 # Start drawing a polygon
@@ -1077,20 +843,14 @@ class World(): #pyglet.window.Window):
         glVertex3f(-1.0, -1.0, 0.0)         # Bottom Left
         glEnd()                             # We are done with the polygon'''
 
-
-        #  since this is double buffered, swap the buffers to display what just got drawn.
-        #(pyglet provides the swap, so we dont use the swap here)
-        #glutSwapBuffers()
         pygame.display.flip()
-        
-        milliseconds2 = time.clock ()        
+
+        milliseconds2 = time.clock ()
         if milliseconds2 - milliseconds < 1./self.wantedFPS:
-            time.sleep(1./self.wantedFPS - (milliseconds2 - milliseconds))            
+            time.sleep(1./self.wantedFPS - (milliseconds2 - milliseconds))
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def on_key_press(self, symbol):#, modifiers):
-        #if symbol == key.ESCAPE:
-        #    self.dispatch_event('on_close')
         #enable or disable rotation
         if symbol == K_SPACE:
             if self.rotateSpeed == self.ROTATESPEED:
@@ -1104,12 +864,14 @@ class World(): #pyglet.window.Window):
                 glDisable(GL_TEXTURE_2D)
             else:
                 self.texturesOn = 1
-                glEnable(GL_TEXTURE_2D)        
+                glEnable(GL_TEXTURE_2D)
+        #toggle normal mapping with shaders
         if symbol == K_n:
             if self.normalMapOn == 1:
                 self.normalMapOn = 0
             else:
                 self.normalMapOn = 1
+        #camera movement
         if symbol == K_UP:
             self.camDistance += 1.0
         if symbol == K_DOWN:
@@ -1261,18 +1023,18 @@ def pskimport(infile):
         matlist.append('')
         indata = unpack('64s6i',pskfile.read(88))
         print counter, indata[0].rstrip('\x00')
-        
+
         diffuse = ''
-        normal = ''        
+        normal = ''
         try:
-            matfile = open(dirname + indata[0].rstrip('\x00') + '.mat')        
+            matfile = open(dirname + indata[0].rstrip('\x00') + '.mat')
             for line in matfile:
                 if line.split('=')[0] == 'Diffuse':
                     diffuse = line.split('=')[1].replace('\n', '') + '.tga'
                 if line.split('=')[0] == 'Normal':
                     normal = line.split('=')[1].replace('\n', '') + '.tga'
         except:
-            pass        
+            pass
         matlist[counter] = [diffuse, normal]
         counter = counter + 1
     print matlist
@@ -1568,12 +1330,11 @@ scale = .07
 ##################################main
 if __name__ == "__main__":
     global plik,dirname#,basename
-#     global model_id
-    global vertexlist, faces, faceslist, UVCoords, faceuv    
-    
+    global vertexlist, faces, faceslist, UVCoords, faceuv
+
     if len(sys.argv) > 1:
         filename = sys.argv[1]
-    else:        
+    else:
         filename = "ABGame/6/Elrath_A_Type_Skm.psk"
         filename = "ABGame/7/Elrath_Bikini_Skm.psk"
         filename = "ABGame/8/Elrath_Skm.psk"
@@ -1584,30 +1345,30 @@ if __name__ == "__main__":
         filename = "ABGame/20/Valle_Bikini_Skm.psk"
         filename = "ABGame/21/Valle_Skm.psk"
         filename = "ABGame/23/Ridika02_Sm.pskx"'''
-        
+
         #filename = "Batmobile_MESH_DAMAGE_TEST.pskx"
         #filename = "Talia_posed.psk"
         #filename = "DLC11_Batman_Inc_CV_pose.psk"
         #filename = "catwoman_posed.psk"
         #filename = "BatmanV3_Unmasked_Posed.psk"
         #filename = "Elrath_Bikini_Skm.psk"
-    
+
     filename.replace('\\', '/')
-    
+
     dirname = os.path.dirname(filename)
     if dirname != '':
         dirname += '/'
-    
-    pskimport(filename)    
+
+    pskimport(filename)
 
 #    print 'nb vertex', len(vertexlist), ', nb face', len(faces), ', uv list', len(UVCoords), ', faceuv', len(faceuv), ', facemat', len(facemat)
 #    print vertexlist[0], faces[0], faces[1], faces[2]#, faces[0][0], faces[0][1], faces[0][2]
 #     print vertexlist[faces[0][0]][0], vertexlist[faces[0][0]][1], vertexlist[faces[0][0]][2]
 #    print faceuv[0]
-        
+
     video_flags = OPENGL|DOUBLEBUF|RESIZABLE|HWSURFACE#|FULLSCREEN
     pygame.init()
-    screen_dimensions = 800, 600    
+    screen_dimensions = 800, 600
     surface = pygame.display.set_mode(screen_dimensions, video_flags, 24)
     #pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 1) #don't work
     #wglext_arb.wglSwapIntervalEXT(0)
@@ -1616,11 +1377,11 @@ if __name__ == "__main__":
     #OpenGL.WGL.EXT.swap_control.wglSwapIntervalEXT(1)
     #OpenGL.raw.wglSwapIntervalEXT(0)
     #OpenGL.WGL.wglSwapIntervalEXT(1)
-    
+
     window = World()
-    
+
     window.ReSizeGLScene(*screen_dimensions)
-    
+
     while 1:
         event = pygame.event.poll()
         #if event.type == NOEVENT:
@@ -1640,5 +1401,5 @@ if __name__ == "__main__":
         window.DrawGLScene()
         #time.sleep(0.005)
         #frames += 1
-        
+
     pygame.quit()
