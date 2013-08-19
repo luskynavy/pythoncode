@@ -48,14 +48,14 @@ void main()
     // or localSurface2View[0] depends on the tangent
     // attribute, texture coordinates, and the encoding
     // of the normal map
-    //localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix * vec4(vec3(tangent), 0.0)));
+    localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix * vec4(vec3(tangent), 0.0)));
     //localSurface2View[0]= vec3(1,0,0);
-    //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
-    //localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
-
     localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
-    localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
-    localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
+    localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
+
+    //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
+    //localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
+    //localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
     //mat3 TBNMatrix = mat3(tangent, binormal, normal);
 
     texCoords = gl_MultiTexCoord0;
@@ -195,6 +195,22 @@ fragment_shader1 ='''
         gl_FragColor = color;
     }
 '''
+
+vertex_shader2 ='''
+// Vertex program
+    void main() {      
+        //gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+        gl_Position = ftransform();
+    }
+'''
+
+fragment_shader2 ='''
+// Fragment program
+    void main() {
+        gl_FragColor = vec4(1,1,1,1);
+    }
+'''
+
 ShaderProgram = namedtuple("ShaderProgram", "program uniforms attributes")
 
 def assemble_shader_program(
@@ -344,7 +360,7 @@ class World():
         self.g_nFPS = 0
         self.g_nFrames = 0                                  # FPS and FPS Counter
         self.g_dwLastFPS = 0                                # Last FPS Check Time
-        self.wantedFPS = 60.
+        self.wantedFPS = 600.
         self.myimage1 = None
         self.texturesList = None
         self.camHeight = -7.0
