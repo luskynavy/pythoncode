@@ -363,14 +363,10 @@ class World(): #pyglet.window.Window):
         gluPerspective(45.0,640/480.0,0.1,100.0)    #setup lens
         glMatrixMode(GL_MODELVIEW)
 
-        self.LightAmbient = self.vec(0.5, 0.5, 0.5, 1.0)
-        self.LightDiffuse = self.vec(1., 1., 1., 1.0)
-        self.LightPosition = self.vec(0.0, 1.0, 2.0, 0.0 )
-
         glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.3, 0.3, 0.3, 1.0))  # add lighting. (ambient)
         glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.9, 0.9, 0.9, 1.0))  # add lighting. (diffuse).
         glLightfv(GL_LIGHT1, GL_POSITION, self.vec(1.0, 1.0, 1.5, 0.0)) # set light position.
-        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(0.0, 1.0, 2.0, 0.0)) # set light position.
+        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(0.0, 1.0, 2.0, .0)) # set light position.  w=0 => directional
         glLightfv(GL_LIGHT1, GL_SPECULAR, self.vec(1.0, 1.0, 1.0, 1.0))
         glEnable(GL_LIGHT1)                             # turn light 1 on.
 
@@ -555,7 +551,7 @@ class World(): #pyglet.window.Window):
 
         # Clear The Screen And The Depth Buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        glLoadIdentity()                  # Reset The View
+        glLoadIdentity()                  # Reset The View        
 
         glColor4f(0.8, 0.8, 0.8, .5)
 

@@ -105,21 +105,18 @@ void main()
        // directional light?
     {
        attenuation = 1.0; // no attenuation
-       lightDirection =
-          normalize(vec3(gl_LightSource[1].position));
+       lightDirection = normalize(vec3(gl_LightSource[1].position));
     }
     else // point light or spotlight (or other kind of light)
     {
-       vec3 positionToLightSource =
-          vec3(gl_LightSource[1].position - position);
+       vec3 positionToLightSource = vec3(gl_LightSource[1].position - position);
        float distance = length(positionToLightSource);
        attenuation = 1.0 / distance; // linear attenuation
        lightDirection = normalize(positionToLightSource);
 
        if (gl_LightSource[1].spotCutoff <= 90.0) // spotlight?
        {
-          float clampedCosine = max(0.0, dot(-lightDirection,
-             gl_LightSource[1].spotDirection));
+          float clampedCosine = max(0.0, dot(-lightDirection, gl_LightSource[1].spotDirection));
           if (clampedCosine < gl_LightSource[1].spotCosCutoff)
              // outside of spotlight cone?
           {
@@ -127,8 +124,7 @@ void main()
           }
           else
           {
-             attenuation = attenuation * pow(clampedCosine,
-                gl_LightSource[1].spotExponent);
+             attenuation = attenuation * pow(clampedCosine, gl_LightSource[1].spotExponent);
           }
        }
     }
@@ -394,7 +390,7 @@ class World():
 
         glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.2, 0.2, 0.2, 1.0))  # add lighting. (ambient)
         glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.7, 0.7, 0.7, 1.0))  # add lighting. (diffuse).
-        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(1.0, 1.0, 1.5, 0.0 )) # set light position.
+        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(1, 1, 1, 1.0 )) # set light position. w=0 => directional
         glLightfv(GL_LIGHT1, GL_SPECULAR, self.vec(1.0, 1.0, 1.0, 1.0))
         glEnable(GL_LIGHT1)                             # turn light 1 on.
 
