@@ -21,6 +21,10 @@ from collections import namedtuple
 
 from ctypes import *
 
+from shadowsDef import *
+
+screen_dimensions = 800, 600
+
 ''' to test
 https://svn.blender.org/svnroot/bf-blender/trunk/blender/source/blender/gpu/
 https://svn.blender.org/svnroot/bf-blender/trunk/blender/source/blender/gpu/shaders/
@@ -53,10 +57,6 @@ void main()
     localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
     localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
 
-    //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
-    //localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
-    //localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
-    //mat3 TBNMatrix = mat3(tangent, binormal, normal);
 
     texCoords = gl_MultiTexCoord0;
     position = gl_ModelViewMatrix * gl_Vertex;
@@ -93,7 +93,7 @@ void main()
     //vec3 localCoords   = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
     //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb - 0.5);
     vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0));
-       // constants depend on encoding
+    // constants depend on encoding
     vec3 normalDirection = normalize(localSurface2View * localCoords);
 
     // Compute per-pixel Phong lighting with normalDirection
@@ -102,7 +102,7 @@ void main()
     vec3 lightDirection;
     float attenuation;
     if (0.0 == gl_LightSource[1].position.w)
-       // directional light?
+    // directional light?
     {
        attenuation = 1.0; // no attenuation
        lightDirection = normalize(vec3(gl_LightSource[1].position));
@@ -118,7 +118,7 @@ void main()
        {
           float clampedCosine = max(0.0, dot(-lightDirection, gl_LightSource[1].spotDirection));
           if (clampedCosine < gl_LightSource[1].spotCosCutoff)
-             // outside of spotlight cone?
+          // outside of spotlight cone?
           {
              attenuation = 0.0;
           }
@@ -139,10 +139,10 @@ void main()
 
     vec3 specularReflection;
     if (dot(normalDirection, lightDirection) < 0.0)
-       // light source on the wrong side?
+    // light source on the wrong side?
     {
        specularReflection = vec3(0.0, 0.0, 0.0);
-          // no specular reflection
+       // no specular reflection
     }
     else // light source on the right side
     {
@@ -161,6 +161,12 @@ void main()
         1.0//vec3(texColor) // here?
         + specularReflection
         , 1.0);
+    //don't change skin color to green
+     /*if (!(gl_FragColor.r > 1.1*gl_FragColor.b))
+     {
+        gl_FragColor.r = 0;
+        gl_FragColor.b = 0;
+     }*/
      //gl_FragColor = vec4(vec3(texColor), 1.0);
 }
 '''
@@ -205,6 +211,44 @@ fragment_shader2 ='''
     void main() {
         gl_FragColor = vec4(1,1,1,1);
     }
+'''
+
+vertex_shader3 ='''
+// Used for shadow lookup
+varying vec4 ShadowCoord;
+
+void main()
+{
+     	ShadowCoord= gl_TextureMatrix[7] * gl_Vertex;
+  
+		gl_Position = ftransform();
+
+		gl_FrontColor = gl_Color;
+}
+'''
+
+fragment_shader3 ='''
+uniform sampler2D ShadowMap;
+
+varying vec4 ShadowCoord;
+
+void main()
+{	
+	vec4 shadowCoordinateWdivide = ShadowCoord / ShadowCoord.w ;
+	
+	// Used to lower moire pattern and self-shadowing
+	shadowCoordinateWdivide.z += 0.0005;
+	
+	//float distanceFromLight = texture2D(ShadowMap,shadowCoordinateWdivide).z;
+    vec4 distanceFromLightCol = texture2D(ShadowMap,vec2(shadowCoordinateWdivide));
+    float distanceFromLight = distanceFromLightCol.z;
+	
+ 	float shadow = 1.0;
+ 	if (ShadowCoord.w > 0.0)
+ 		shadow = distanceFromLight < shadowCoordinateWdivide.z ? 0.5 : 1.0 ;
+	
+  	gl_FragColor =	 shadow * gl_Color;
+ }
 '''
 
 ShaderProgram = namedtuple("ShaderProgram", "program uniforms attributes")
@@ -338,7 +382,6 @@ class MyImage:
 
 ##################################World
 class World():
-
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __init__(self):
         self.setup()
@@ -350,18 +393,22 @@ class World():
         self.listIds = None
         self.angle = 0
         self.ROTATESPEED = 2                                #speed of rotation
-        self.rotateSpeed = self.ROTATESPEED                      #actual rotation speed
+        self.rotateSpeed = self.ROTATESPEED                 #actual rotation speed
         self.texturesOn = 1
         self.normalMapOn = 0
+        self.shadowsOn = 0
         self.g_nFPS = 0
         self.g_nFrames = 0                                  # FPS and FPS Counter
         self.g_dwLastFPS = 0                                # Last FPS Check Time
-        self.wantedFPS = 600.
+        self.wantedFPS = 60.
         self.myimage1 = None
         self.texturesList = None
         self.camHeight = -7.0
         self.camDistance = -20.0
         self.camStrafe = 0.0
+        
+        #init shadow texture
+        self.textureMapID = CreateTextureShadow()
 
         print "%.3f setup end" % time.clock()
 
@@ -372,25 +419,27 @@ class World():
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # A general OpenGL initialization function.  Sets all of the initial parameters.
-    def InitGL(self):#,Width, Height):             # We call this right after our OpenGL window is created.
-        glClearColor(0.3, 0.3, 0.5, 0.0)       # This Will Clear The Background Color To Black
-        glClearDepth(1.0)                         # Enables Clearing Of The Depth Buffer
-        glDepthFunc(GL_LESS)                      # The Type Of Depth Test To Do
+    def InitGL(self):#,Width, Height):          # We call this right after our OpenGL window is created.
+        glClearColor(0.3, 0.3, 0.5, 0.0)        # This Will Clear The Background Color To Black
+        glClearDepth(1.0)                       # Enables Clearing Of The Depth Buffer
+        glDepthFunc(GL_LESS)                    # The Type Of Depth Test To Do
         glEnable(GL_DEPTH_TEST)                 # Enables Depth Testing
-        glShadeModel(GL_SMOOTH)             # Enables Smooth Color Shading
+        glShadeModel(GL_SMOOTH)                 # Enables Smooth Color Shading
         glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()                          # Reset The Projection Matrix
-                                                    # Calculate The Aspect Ratio Of The Window
+        glLoadIdentity()                        # Reset The Projection Matrix
+                                                # Calculate The Aspect Ratio Of The Window
         #gluPerspective(45.0, float(Width)/float(Height), 0.1, 100.0)
         glMatrixMode(GL_MODELVIEW)
 
         #glPolygonMode( GL_FRONT_AND_BACK, GL_LINE )    #wireframe
         #glEnable(GL_CULL_FACE);
         #glCullFace(GL_FRONT) #or GL_BACK or even GL_FRONT_AND_BACK
+        
+        self.lightPosition = (1.0, 1.0, 1.0, 1.0)
 
         glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.2, 0.2, 0.2, 1.0))  # add lighting. (ambient)
         glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.7, 0.7, 0.7, 1.0))  # add lighting. (diffuse).
-        glLightfv(GL_LIGHT1, GL_POSITION, self.vec(1, 1, 1, 1.0 )) # set light position. w=0 => directional
+        glLightfv(GL_LIGHT1, GL_POSITION, self.lightPosition) # set light position. w=0 => directional
         glLightfv(GL_LIGHT1, GL_SPECULAR, self.vec(1.0, 1.0, 1.0, 1.0))
         glEnable(GL_LIGHT1)                             # turn light 1 on.
 
@@ -408,10 +457,10 @@ class World():
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        # // Enable Pointers
-        glEnableClientState(GL_VERTEX_ARRAY);                      # // Enable Vertex Arrays
-        glEnableClientState(GL_TEXTURE_COORD_ARRAY);               # // Enable Texture Coord Arrays
-        glEnableClientState(GL_NORMAL_ARRAY);                      # // Enable Normal Arrays
+        #Enable Pointers
+        glEnableClientState(GL_VERTEX_ARRAY);                      #Enable Vertex Arrays
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY);               #Enable Texture Coord Arrays
+        glEnableClientState(GL_NORMAL_ARRAY);                      #Enable Normal Arrays
 
         self.program = assemble_shader_program(vertex_shader, fragment_shader,
                                           uniform_names=[
@@ -537,7 +586,6 @@ class World():
             glEnd()
             glEndList();
 
-
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def LoadMaterials(self):
         global matlist, dirname
@@ -607,7 +655,7 @@ class World():
         var = vertices[nfaces]
         #var = vertices[tri_index]
         var1 = var.reshape( -1)
-#         vertices_gl = (GLfloat * len(var1))(*var1)
+        #vertices_gl = (GLfloat * len(var1))(*var1)
         #vertices_gl = (GLfloat * len(vertexlist))(*vertexlist)
         #glVertexPointer(3, GL_FLOAT, 0, vertices_gl)
         #glVertexPointer(3, GL_FLOAT, 0, var1.tostring())
@@ -811,9 +859,20 @@ class World():
 
         self.g_nFrames += 1                                                 # // Increment Our FPS Counter
 
+        #render obj(s) casting shadows        
+        if self.shadowsOn:
+            self.textureMatrix = CreateShadowBefore(self.lightPosition)
+            self.DrawMultipleMaterials()
+            CreateShadowAfter(self.textureMapID)
+
         # Clear The Screen And The Depth Buffer
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glLoadIdentity()                  # Reset The View
+        
+        self.ReSizeGLScene(screen_dimensions[0], screen_dimensions[1])
+        
+        glEnable(GL_LIGHTING)                       #Enable Lighting
+        glEnable(GL_TEXTURE_2D)                     # Enable texture mapping.
 
         # Move Left 1.5 units and into the screen 6.0 units.
         glTranslatef(self.camStrafe, self.camHeight, self.camDistance)
@@ -828,9 +887,15 @@ class World():
 
         #self.DrawOneMaterial()
         self.DrawMultipleMaterials()
+        
+        #render obj(s) where shadows cast
+        if self.shadowsOn:
+            RenderShadowCompareBefore(self.textureMapID,self.textureMatrix)
+            self.DrawMultipleMaterials()
+            RenderShadowCompareAfter()
 
         # Since we have smooth color mode on, this will be great for the Phish Heads :-).
-                # Draw a triangle
+        # Draw a triangle
         '''glBegin(GL_POLYGON)                 # Start drawing a polygon
         glNormal3f(0, 0, 1)
         glColor3f(1.0, 0.0, 0.0)            # Red
@@ -883,6 +948,12 @@ class World():
                 self.normalMapOn = 0
             else:
                 self.normalMapOn = 1
+        #toggle shadow mapping
+        if symbol == K_s:
+            if self.shadowsOn == 1:
+                self.shadowsOn = 0
+            else:
+                self.shadowsOn = 1
         #camera movement
         if symbol == K_UP:
             self.camDistance += 1.0
@@ -902,7 +973,7 @@ class World():
 
 def pskimport(infile):
     global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist, dirname
-#     global DEBUGLOG
+    #global DEBUGLOG
     #print ("--------------------------------------------------")
     #print ("---------SCRIPT EXECUTING PYTHON IMPORTER---------")
     #print ("--------------------------------------------------")
@@ -1379,8 +1450,7 @@ if __name__ == "__main__":
 #    print faceuv[0]
 
     video_flags = OPENGL|DOUBLEBUF|RESIZABLE|HWSURFACE#|FULLSCREEN
-    pygame.init()
-    screen_dimensions = 800, 600
+    pygame.init()    
     surface = pygame.display.set_mode(screen_dimensions, video_flags, 24)
     #pygame.display.gl_set_attribute(pygame.GL_SWAP_CONTROL, 1) #don't work
     #wglext_arb.wglSwapIntervalEXT(0)
