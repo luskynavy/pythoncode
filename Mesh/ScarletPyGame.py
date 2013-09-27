@@ -105,11 +105,6 @@ void main()
     localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
     localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
 
-    //localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
-    //localSurface2View[0] = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5));
-    //localSurface2View[1] = cross(localSurface2View[2], localSurface2View[0]);
-    //mat3 TBNMatrix = mat3(tangent, binormal, normal);
-
     texCoords = gl_MultiTexCoord0;
     position = gl_ModelViewMatrix * gl_Vertex;
     gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
@@ -146,7 +141,7 @@ void main()
     vec3 localCoords = normalize( texture2D(normal_texture, vec2(texCoords)).rga - 0.5);
     //vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0));
     //vec3 localCoords = normalize(vec3(2.0, 2.0, 1.0) * vec3(encodedNormal) - vec3(1.0, 1.0, 0.0));
-       // constants depend on encoding
+    // constants depend on encoding
     vec3 normalDirection = normalize(localSurface2View * localCoords);
 
     // Compute per-pixel Phong lighting with normalDirection
@@ -155,16 +150,14 @@ void main()
     vec3 lightDirection;
     float attenuation;
     if (0.0 == gl_LightSource[1].position.w)
-       // directional light?
+    // directional light?
     {
        attenuation = 1.0; // no attenuation
-       lightDirection =
-          normalize(vec3(gl_LightSource[1].position));
+       lightDirection = normalize(vec3(gl_LightSource[1].position));
     }
     else // point light or spotlight (or other kind of light)
     {
-       vec3 positionToLightSource =
-          vec3(gl_LightSource[1].position - position);
+       vec3 positionToLightSource = vec3(gl_LightSource[1].position - position);
        float distance = length(positionToLightSource);
        attenuation = 1.0 / distance; // linear attenuation
        lightDirection = normalize(positionToLightSource);
@@ -222,11 +215,7 @@ void main()
 
 ShaderProgram = namedtuple("ShaderProgram", "program uniforms attributes")
 
-def assemble_shader_program(
-        vertex_shader_source,
-        fragment_shader_source,
-        uniform_names,
-        attribute_names):
+def assemble_shader_program(vertex_shader_source, fragment_shader_source, uniform_names, attribute_names):
     vertex_shader = make_shader(GL_VERTEX_SHADER, vertex_shader_source)
     fragment_shader = make_shader(GL_FRAGMENT_SHADER, fragment_shader_source)
     program = make_program(vertex_shader, fragment_shader)
@@ -315,8 +304,7 @@ class MyImage:
         self.texturedata = texturedata
 
 ##################################World
-#class World(pyglet.window.Window):
-class World(): #pyglet.window.Window):
+class World():
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __init__(self):
