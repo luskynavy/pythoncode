@@ -435,7 +435,7 @@ class World():
         #glEnable(GL_CULL_FACE);
         #glCullFace(GL_FRONT) #or GL_BACK or even GL_FRONT_AND_BACK
         
-        self.lightPosition = (1.0, 1.0, 1.0, 1.0)
+        self.lightPosition = (1.0, -20.0, 1.0, 1.0)
 
         glLightfv(GL_LIGHT1, GL_AMBIENT, self.vec(0.2, 0.2, 0.2, 1.0))  # add lighting. (ambient)
         glLightfv(GL_LIGHT1, GL_DIFFUSE, self.vec(0.7, 0.7, 0.7, 1.0))  # add lighting. (diffuse).
@@ -890,10 +890,34 @@ class World():
         
         #render obj(s) where shadows cast
         if self.shadowsOn:
+            #debug quad for shadow texture
+            glMatrixMode(GL_PROJECTION);
+            glLoadIdentity();
+            glOrtho(0, screen_dimensions[0], screen_dimensions[1], 0, -10, 10);
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+            
+            #glActiveTexture(GL_TEXTURE0)
+            #glBindTexture(GL_TEXTURE_2D, self.texturesList[0][0].texturedata)
+            glBindTexture(GL_TEXTURE_2D, self.textureMapID)
+            
+            glBegin(GL_QUADS)
+            glTexCoord2f(0, 0)
+            glVertex2f(0, 0)
+            glTexCoord2f(1, 0)
+            glVertex2f(200.0, 0.0)
+            glTexCoord2f(1, 1)
+            glVertex2f(200.0, 200.0)
+            glTexCoord2f(0, 1)
+            glVertex2f(0.0, 200.0)
+            glEnd()
+            
             RenderShadowCompareBefore(self.textureMapID,self.textureMatrix)
             self.DrawMultipleMaterials()
             RenderShadowCompareAfter()
-
+            
+            
+            
         # Since we have smooth color mode on, this will be great for the Phish Heads :-).
         # Draw a triangle
         '''glBegin(GL_POLYGON)                 # Start drawing a polygon
@@ -918,8 +942,8 @@ class World():
         glVertex3f(1.0, 1.0, 0.0)           # Top Right
         glVertex3f(1.0, -1.0, 0.0)          # Bottom Right
         glVertex3f(-1.0, -1.0, 0.0)         # Bottom Left
-        glEnd()                             # We are done with the polygon'''
-
+        glEnd()                             # We are done with the polygon'''        
+        
         pygame.display.flip()
 
         milliseconds2 = time.clock ()
