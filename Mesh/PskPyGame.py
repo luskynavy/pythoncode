@@ -1503,7 +1503,8 @@ if __name__ == "__main__":
                 window.ReSizeGLScene(*screen_dimensions)
                 surface = pygame.display.set_mode(screen_dimensions, video_flags, 24)
             else:
-                window.ReSizeGLScene(event.dict['size'][0], event.dict['size'][1])
+                screen_dimensions = event.dict['size']
+                window.ReSizeGLScene(*screen_dimensions)
         window.DrawGLScene()
         #time.sleep(0.005)
         #frames += 1
