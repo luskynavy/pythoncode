@@ -24,14 +24,15 @@ def ReadLineIgnoreComments(file):
     if pos >= 0:
         line = line[0:pos]
     return line
-    
+
 def ReadTuple(file):
     line = ReadLineIgnoreComments(file)
-    return line.split()        
+    return line.split()
 
-
-if __name__ == "__main__":
-    file = open("D:\Data\Python\Mesh\Pyro\Pyro Red\Generic_Item.mesh.ascii",'r')
+def meshAsciiImport(infile):
+    global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist, dirname
+    
+    file = open(infile,'r')
     
     boneCount = int(ReadLineIgnoreComments(file))
     
@@ -63,12 +64,17 @@ if __name__ == "__main__":
         
         vertexCount = int(ReadLineIgnoreComments(file))
         
+        vertexlist = []
+        UVCoords = []
+        faceslist = []
+        
         for vertexID in range(0, vertexCount):
             tuple = ReadTuple(file)
             x = float(tuple[0])
             y = float(tuple[1])
             z = float(tuple[2])
             #coords.append([x, -z, y])
+            vertexlist.extend([(x * scale ,z * scale ,y * scale)])
             
             tuple = ReadTuple(file)
             nx = float(tuple[0])
@@ -89,6 +95,7 @@ if __name__ == "__main__":
                 u = float(tuple[0])
                 v = float(tuple[1])
                 uvList.append([u, 1 - v])
+                UVCoords.append([u, v, 0])
             #uvs.append(uvList)
             
             if (boneCount != None):
@@ -120,6 +127,7 @@ if __name__ == "__main__":
                 indices.append([1, 2, 3])
             else:
                 indices.append([index1 + 1, index3 + 1, index2 + 1])
+                faceslist.append([index1 + 1, index3 + 1, index2 + 1])
 
         # mesh.faces.extend(indices, ignoreDups=True)
 
@@ -157,3 +165,13 @@ if __name__ == "__main__":
              
          except:
              print (str(faceID))
+    
+scale = .07
+
+##################################main
+if __name__ == "__main__":
+    global vertexlist, faces, faceslist, UVCoords, faceuv
+
+    meshAsciiImport("D:\Data\Python\Mesh\Pyro\Pyro Red\Generic_Item.mesh.ascii")
+    
+    print 'nb vertex', len(vertexlist), ', nb faces', len(faceslist)
