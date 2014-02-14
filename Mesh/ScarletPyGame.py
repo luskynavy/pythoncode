@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+#from PIL import Image
 
 import numpy as np
 from itertools import izip
@@ -215,7 +216,11 @@ void main()
 
 ShaderProgram = namedtuple("ShaderProgram", "program uniforms attributes")
 
-def assemble_shader_program(vertex_shader_source, fragment_shader_source, uniform_names, attribute_names):
+def assemble_shader_program(
+        vertex_shader_source,
+        fragment_shader_source,
+        uniform_names,
+        attribute_names):
     vertex_shader = make_shader(GL_VERTEX_SHADER, vertex_shader_source)
     fragment_shader = make_shader(GL_FRAGMENT_SHADER, fragment_shader_source)
     program = make_program(vertex_shader, fragment_shader)
@@ -268,8 +273,9 @@ def normalize_v3(arr):
     arr[:,1] /= lens
     arr[:,2] /= lens
     return arr
-'''
-def chunks(seq, n):
+
+    
+'''def chunks(seq, n):
     return [seq[i:i+n] for i in range(0, len(seq), n)]
 
 def get_colors1(img, format, pitch, default_value=np.uint8(255)):
@@ -287,14 +293,14 @@ def get_colors1(img, format, pitch, default_value=np.uint8(255)):
             res[i::nb_final_colors] = c
         except ValueError:
             res[i::nb_final_colors] = default_value
-    print "enumerate done", time.clock()
+    #print "%.3f enumerate done" % time.clock()
     #return res.tostring()
     if pitch > 0:
         return res.tostring()
     else:
         return ''.join(''.join(c) for c in izip(chunks(res.tostring(), img.width*4)[::-1]))
 '''
-##################################Image
+##################################MyImage
 class MyImage:
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __init__(self,x,y,imagedata,texturedata):
@@ -305,15 +311,13 @@ class MyImage:
 
 ##################################World
 class World():
-
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __init__(self):
         self.setup()
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def setup(self):
-        self.InitGL()#self._width, self._height)
-        #self.InitGL(1280, 1024)
+        self.InitGL()
         self.listId = 0
         self.angle = 0
         self.DisplayGlTriangles()
