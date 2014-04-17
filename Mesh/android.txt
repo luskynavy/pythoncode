@@ -1,0 +1,3 @@
+title=PskKivy
+author=Lusky
+orientation=portrait
