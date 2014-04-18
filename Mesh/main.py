@@ -9,13 +9,13 @@ from kivy.graphics import Canvas, Rectangle, Callback, PushMatrix, \
     UpdateNormalMatrix
 #from objloader import ObjFileLoader
 from pskloader import PSKFileLoader
+from MeshAsciiLoader import MeshAsciiLoader
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
 from kivy.graphics.fbo import Fbo
 from kivy.properties import ObjectProperty
 from kivy.core.image import Image
 
-scale = .03
 
 class Renderer(Widget):
     texture = ObjectProperty(None, allownone=True)
@@ -27,11 +27,61 @@ class Renderer(Widget):
         #self.scene = ObjFileLoader(resource_find("testnurbs.obj"))
         
         Logger.debug('******************************************************')
-        #pskimport("Batman_Rabbit_Head_Posed/Batman_Rabbit_Head_Posed.psk")
-        self.scene = PSKFileLoader(resource_find("Batman_Rabbit_Head_Posed/Batman_Rabbit_Head_Posed.psk"), scale)
+        scale = 3
+        #self.scene = MeshAsciiLoader(resource_find("Pyro/Pyro Red/Generic_Item.mesh.ascii"), 2.)
+        #self.scene = MeshAsciiLoader(resource_find("DOA5U_Helena_Halloween_TRDaz/Generic_Item.mesh.ascii"), 2.)        
+        # dir = "Mai Venus Bikini"        
+        # dir = "TRACY [B_A_O]" #pb uv
+        # dir = "Mai Shiranui Biniki 2"
+        # dir = "Wrench_Girl_Fight/Default"
+        # dir, scale = "Scarllet_Lingerie_KiD/Scarllet_Lingerie", .04
+        #dir, scale = "Rumble_Roses_XX_Lady_X_Substance_by_darkblueking", 15
+        # dir = "RG_Kaori"
+        # dir = "Ol.aMANDA_heavy"
+        # dir = "Mai Shiranui Bikini Red" #pb uv
+        # dir = "AlphaProt_Uli_Booli_Classy"
+        dir = "Bayonetta_Default_ Bayonetta"
+        # dir = "Bayonetta_nude_V2.5" #pb uv
+        # dir = "BnS-Gon-F002_NCSoft"
+        #dir, scale = "CANDY [B_A_O]", 1.5 #pb uv
+        # dir = "DeadOrAlive5_HelenaX2Venus"
+        # dir = "Dixie_RR_XX"
+        # dir = "DOA5_Christie_Dominatrix/Wet text"        
+        # dir = "DOA5U_Ayane_Intimate_TRDaz" #pb uv
+        # dir = "DOA5_Kasumi_Hot_Getaway/Model"
+        # dir, scale = "Devil May Cry 4 - Trish", 1.5
+        # dir = "DOA5-X2_Ayane_AquamarineSwimsuit_TRDaz"
+        # dir = "DOA5_Kokoro_Cos7"
+        # dir = "DOA5_Kokoro_Halloween"
+        # dir = "DOA5U_Christie_Halloween_TRDaz/DOA5U_Christie_Halloween_Hair1" #pb uv
+        # dir = "DOA5U_Kasumi_Casual/Model/Braid"
+        # dir = "DOA5U_Rachel_Business/Model"
+        # dir = "DOA5U_Rachel_Casual/Model"
+        # dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
+        # dir = "Duke Nukem Forever_Kitty Pussoix"
+        # dir = "Blade&Soul - Gon female 1" #pb uv
+        # dir = "Blade&Soul - Jin female 01" #pb uv
+        # dir = "Blade&Soul - Jin female 03"
+        # dir = "Blade&Soul - Jin female Yuran" #pb uv
+        # dir = "BlackDesert_HumanFemale_Base"
+        # dir = "DOA5U_Lisa_Hamilton_Tropical/Unmasked"
+        # dir = "DOA5U_Tina_Armstrong_DOA2_Suit/Model"
+        # dir = "DOA5U_Tina_Armstrong_Legacy/Model"
+        # dir = "MOM_BIKINI"
+        dir, scale = "Natalia_Lingerie_KiD", .04        
+        self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)
+                
+        #scale = .03
+        #self.texturename = 'Batman_Rabbit_Head_Posed/Batman_V3_Body_D.PNG'
+        #self.scene = PSKFileLoader(resource_find("Batman_Rabbit_Head_Posed/Batman_Rabbit_Head_Posed.psk"), scale)
+        #self.texturename = 'Gray/Gray_C1.tga'
         #self.scene = PSKFileLoader(resource_find("Gray/Mike_TPP.psk"), scale) #too many indices, good for split test
+        #self.texturename = 'CV_Talia/Talia_Body_D.tga'
+        #self.texturename = 'CV_Talia/Talia_Legs_D.tga')
         #self.scene = PSKFileLoader(resource_find("CV_Talia/Talia_posed.psk"), scale) #too many indices, good for split test
-        #self.scene = PSKFileLoader(resource_find("AlphaProt_Uli_Booli_Classy/NPC_Uli_NightDress.psk"), scale)
+        #self.texturename = 'AlphaProt_Uli_Booli_Classy/Uli_body_02_D2.tga'
+        #self.texturename = 'AlphaProt_Uli_Booli_Classy/Uli_new_UV_DAO.tga'
+        #self.scene = PSKFileLoader(resource_find("AlphaProt_Uli_Booli_Classy/NPC_Uli_NightDress.psk"), .07)
         #self.scene = PSKFileLoader(resource_find("AlphaProt_Uli_Booli_Classy/NPC_Uli_Head.psk"), scale)
         Logger.debug('******************************************************')
 
@@ -46,7 +96,7 @@ class Renderer(Widget):
         self.fbo.shader.source = resource_find('simple.glsl')
         #self.texture = self.fbo.texture
 
-        super(Renderer, self).__init__(**kwargs)
+        super(Renderer, self).__init__(**kwargs)        
 
         with self.fbo:
             #ClearBuffers(clear_depth=True)
@@ -117,8 +167,11 @@ class Renderer(Widget):
                 mode='triangles',
             )
             if texture:
-                texture = Image(texture).texture
-                mesh.texture = texture
+                try:
+                    texture = Image(texture).texture
+                    mesh.texture = texture
+                except: #no texture if not found or not supported
+                    pass
 
         def _set_color(*color, **kw):
             id_color = kw.pop('id_color', (0, 0, 0))
@@ -131,16 +184,17 @@ class Renderer(Widget):
                 id_color=[i / 255. for i in id_color],
             )
 
-        # Draw sphere in the center
-        #sphere = self.scene.objects['Sphere']
-        sphere = self.scene.objects[0]
-        _set_color(0.7, 0.7, 0., id_color=(255, 255, 0))
-        #_draw_element(sphere, 'rock.png')
-        #_draw_element(sphere, 'bricks.png')
-        _draw_element(sphere, 'Batman_Rabbit_Head_Posed/Batman_V3_Body_D.PNG')
-        #_draw_element(sphere, 'Gray/Gray_C1.tga')
-        #_draw_element(sphere, 'CV_Talia/Talia_Body_D.tga')
-        #_draw_element(sphere, 'CV_Talia/Talia_Legs_D.tga')
+        for meshid in range(0, len(self.scene.objects)):
+            # Draw sphere in the center
+            #sphere = self.scene.objects['Sphere']
+            mesh = self.scene.objects[meshid]
+            #_set_color(0.7, 0.7, 0., id_color=(255, 255, 0))
+            #_draw_element(sphere, 'rock.png')
+            #_draw_element(sphere, 'bricks.png')
+            if (mesh.diffuse != ""):
+                _draw_element(mesh, mesh.diffuse)
+            else:
+                _draw_element(mesh, self.texturename)
 
         # Then draw other elements and totate it in different axis
         #pyramid = self.scene.objects['Pyramid']
@@ -208,24 +262,24 @@ class Renderer(Widget):
                 old_dy = old_pos1[1] - old_pos2[1]
 
                 old_distance = (old_dx*old_dx + old_dy*old_dy)
-                Logger.debug('Old distance: %s' % old_distance)
+                #Logger.debug('Old distance: %s' % old_distance)
 
                 new_dx = touch1.x - touch2.x
                 new_dy = touch1.y - touch2.y
 
                 new_distance = (new_dx*new_dx + new_dy*new_dy)
 
-                Logger.debug('New distance: %s' % new_distance)
+                #Logger.debug('New distance: %s' % new_distance)
                 SCALE_FACTOR = 0.01
 
                 if new_distance > old_distance:
                     scale = SCALE_FACTOR
-                    Logger.debug('Scale up')
+                    #Logger.debug('Scale up')
                 elif new_distance == old_distance:
                     scale = 0
                 else:
                     scale = -1*SCALE_FACTOR
-                    Logger.debug('Scale down')
+                    #Logger.debug('Scale down')
 
                 xyz = self.scale.xyz
 

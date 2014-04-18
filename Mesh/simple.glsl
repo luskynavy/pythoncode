@@ -33,5 +33,6 @@ uniform sampler2D tex;
 
 void main (void){
     vec4 color = texture2D(tex, uv_vec);
+	color.a = 1; //disable alpha transparency
     gl_FragColor = color;
 }

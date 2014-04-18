@@ -48,19 +48,22 @@ def meshAsciiImport(infile):
     meshCount = int(ReadLineIgnoreComments(file))
     print("Mesh count: " + str(meshCount))
     
+    #meshes
     for i in range(0, meshCount):
         meshFullName = meshName = ReadLine(file)
         print("meshFullName: " + meshFullName )
         
         uvLayerCount = int(ReadLineIgnoreComments(file))
-        print("UV Layer Count: " + str(uvLayerCount))
+        #print("UV Layer Count: " + str(uvLayerCount))
         
         textureCount = int(ReadLineIgnoreComments(file))
         print("Texture Count: " + str(textureCount))
         
         for textureID in range(0, textureCount):
             textureFilename = ReadLine(file)
+            print("textureFilename: " + textureFilename)
             uvLayerID = int(ReadLineIgnoreComments(file))
+            print("uvLayerID: " + str(uvLayerID))
         
         vertexCount = int(ReadLineIgnoreComments(file))
         
@@ -68,6 +71,7 @@ def meshAsciiImport(infile):
         UVCoords = []
         faceslist = []
         
+        #vertices
         for vertexID in range(0, vertexCount):
             tuple = ReadTuple(file)
             x = float(tuple[0])
@@ -76,6 +80,7 @@ def meshAsciiImport(infile):
             #coords.append([x, -z, y])
             vertexlist.extend([(x * scale ,z * scale ,y * scale)])
             
+            #normals
             tuple = ReadTuple(file)
             nx = float(tuple[0])
             ny = float(tuple[1])
@@ -89,6 +94,7 @@ def meshAsciiImport(infile):
             # a = int(tuple[3])
             # colors.append([r, g, b, a])
             
+            #uv per vertex
             uvList = []
             for i in range(0, uvLayerCount):
                 tuple = ReadTuple(file)
@@ -118,6 +124,7 @@ def meshAsciiImport(infile):
         
         indices = []
 
+        #faces
         for i in range(0, faceCount):
             tuple = ReadTuple(file)
             index1 = int(tuple[0])
@@ -166,6 +173,8 @@ def meshAsciiImport(infile):
          except:
              print (str(faceID))
     
+    print 'nb vertex', len(vertexlist), ', nb faces', len(faceslist)
+    print 'nb UVCoords', len(UVCoords)
 scale = .07
 
 ##################################main
@@ -173,5 +182,6 @@ if __name__ == "__main__":
     global vertexlist, faces, faceslist, UVCoords, faceuv
 
     meshAsciiImport("D:\Data\Python\Mesh\Pyro\Pyro Red\Generic_Item.mesh.ascii")
+    #meshAsciiImport("D:\Data\Python\Mesh\DOA5U_Helena_Halloween_TRDaz\generic_item.mesh.ascii")
     
-    print 'nb vertex', len(vertexlist), ', nb faces', len(faceslist)
+    

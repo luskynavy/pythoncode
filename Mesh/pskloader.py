@@ -12,6 +12,8 @@ class MeshData(object):
             ('v_tc0', 2, 'float')]
         self.vertices = []
         self.indices = []
+        self.diffuse = ""
+        self.normal = ""
         
         # Default basic material of mesh object
         self.diffuse_color = (1.0, 1.0, 1.0)
