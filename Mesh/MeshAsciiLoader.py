@@ -1,5 +1,7 @@
 import os
+import math
 from struct import *
+#import numpy as np
 
 from kivy.logger import Logger
 
@@ -8,7 +10,7 @@ class MeshData(object):
         self.name = kwargs.get("name")
         self.vertex_format = [
             ('v_pos', 3, 'float'),
-            #('v_normal', 3, 'float'),
+            ('v_normal', 3, 'float'),
             ('v_tc0', 2, 'float')]
         self.vertices = []
         self.indices = []
@@ -82,6 +84,20 @@ def ReadLineIgnoreComments(file):
 def ReadTuple(file):
     line = ReadLineIgnoreComments(file)
     return line.split()
+    
+def normalize_v3(arr):
+    #normalize a vector3
+    try:
+        lens = math.sqrt( arr[0]**2 + arr[1]**2 + arr[2]**2 )    
+        arr[0] /= lens
+        arr[1] /= lens
+        arr[2] /= lens
+    except:
+        arr[0] = 1
+        arr[1] = 0
+        arr[2] = 0
+    return arr
+
 
 
 class MeshAsciiLoader(object):
@@ -144,7 +160,7 @@ class MeshAsciiLoader(object):
             
             vertexlist = []
             UVCoords = []
-            faceslist = []
+            # faceslist = []
             
             #vertices
             for vertexID in range(0, vertexCount):
@@ -153,7 +169,7 @@ class MeshAsciiLoader(object):
                 y = float(tuple[1])
                 z = float(tuple[2])
                 #coords.append([x, -z, y])
-                vertexlist.extend([(x * scale, z * scale, y * scale)])
+                vertexlist.extend([-x * scale, y * scale, -z * scale])
                 
                 #normals
                 tuple = ReadTuple(file)
@@ -175,12 +191,14 @@ class MeshAsciiLoader(object):
                     tuple = ReadTuple(file)
                     u = float(tuple[0])
                     v = float(tuple[1])
+                    #print u, v
+                   
                     uvList.append([u, 1 - v])
                     UVCoords.append([u, v, 0])
                 #uvs.append(uvList)
                 
                 mesh.vertices.extend([-x * scale, y * scale, -z * scale])
-                #mesh.vertices.extend([0,0,0])
+                mesh.vertices.extend([-nx,ny,-nz])
                 mesh.vertices.extend([u, v])
                 
                 if (boneCount != None):
@@ -213,8 +231,8 @@ class MeshAsciiLoader(object):
                     indices.append([1, 2, 3])
                     mesh.indices.extend([0,1,2])
                 else:
-                    indices.append([index1 + 1, index3 + 1, index2 + 1])
-                    faceslist.append([index1 + 1, index3 + 1, index2 + 1])
+                    # indices.append([index1 + 1, index3 + 1, index2 + 1])
+                    # faceslist.append([index1 + 1, index3 + 1, index2 + 1])
                     mesh.indices.extend([index1, index2, index3])
 
             # mesh.faces.extend(indices, ignoreDups=True)
@@ -249,14 +267,72 @@ class MeshAsciiLoader(object):
                  # face.col[2].a = color3[3]
                  # face.smooth = True
              
-                 faces.extend([index1, index2, index3, 0])
+                 # faces.extend([index1, index2, index3, 0])
                  
              except:
-                 print (str(faceID))
+                 # print (str(faceID))
+                 pass
+            
+            #compute normals
+            
+            normPoints = []
+            for i in range(len(vertexlist)):
+                normPoints.append(0)
+                
+            # normFace = []
+            for i in range(len(mesh.indices) / 3):
+                #get indices
+                fi = i * 3
+                v1i = mesh.indices[fi]
+                v2i = mesh.indices[fi + 1]
+                v3i = mesh.indices[fi + 2]
+
+                p1 = [vertexlist[v1i + c] for c in range(3)]
+                p2 = [vertexlist[v2i + c] for c in range(3)]
+                p3 = [vertexlist[v3i + c] for c in range(3)]
+                
+                u,v  = [0,0,0], [0,0,0]
+                for j in range(3):
+                    v[j] = p2[j] - p1[j]
+                    u[j] = p3[j] - p1[j]
+
+                #compute normal per face
+                n = [0,0,0]
+                n[0] = u[1] * v[2] - u[2] * v[1]
+                n[1] = u[2] * v[0] - u[0] * v[2]
+                n[2] = u[0] * v[1] - u[1] * v[0]
+                normalize_v3(n)
+                
+                # normFace.extend(n)     
+                #add the current face normal to the normals of his points
+                normPoints[v1i + 0] += n[0]
+                normPoints[v1i + 1] += n[1]
+                normPoints[v1i + 2] += n[2]
+                
+                normPoints[v2i + 0] += n[0]
+                normPoints[v2i + 1] += n[1]
+                normPoints[v2i + 2] += n[2]
+                
+                normPoints[v3i + 0] += n[0]
+                normPoints[v3i + 1] += n[1]
+                normPoints[v3i + 2] += n[2]
+            
+            #normalize normals per points and add then to vertices
+            for i in range(len(vertexlist) / 3):
+                fi = i * 3
+                n = [normPoints[fi], normPoints[fi + 1], normPoints[fi + 2]]
+                normalize_v3(n)
+                # normPoints[fi] = n[0]
+                # normPoints[fi + 1] = n[1]
+                # normPoints[fi + 2] = n[2]
+                
+                #mesh.vertices[i * 8 + 3] = n[0]
+                #mesh.vertices[i * 8 + 4] = n[1]
+                #mesh.vertices[i * 8 + 5] = n[2]
                  
             self.objects.append(mesh)
         
-        print 'nb vertex', len(vertexlist), ', nb faces', len(faceslist)
+        print 'nb vertex', len(vertexlist), ', nb faces', len(mesh.indices)
         print 'nb UVCoords', len(UVCoords)
         
         print 'self.objects ' + str(len(self.objects))

@@ -15,6 +15,7 @@ from kivy.uix.widget import Widget
 from kivy.graphics.fbo import Fbo
 from kivy.properties import ObjectProperty
 from kivy.core.image import Image
+from kivy.utils import platform
 
 
 class Renderer(Widget):
@@ -28,48 +29,69 @@ class Renderer(Widget):
         
         Logger.debug('******************************************************')
         scale = 3
-        #self.scene = MeshAsciiLoader(resource_find("Pyro/Pyro Red/Generic_Item.mesh.ascii"), 2.)
-        #self.scene = MeshAsciiLoader(resource_find("DOA5U_Helena_Halloween_TRDaz/Generic_Item.mesh.ascii"), 2.)        
+        #dir = "Pyro/Pyro Red"        
         # dir = "Mai Venus Bikini"        
-        # dir = "TRACY [B_A_O]" #pb uv
+        #dir = "TRACY [B_A_O]"
         # dir = "Mai Shiranui Biniki 2"
         # dir = "Wrench_Girl_Fight/Default"
         # dir, scale = "Scarllet_Lingerie_KiD/Scarllet_Lingerie", .04
         #dir, scale = "Rumble_Roses_XX_Lady_X_Substance_by_darkblueking", 15
         # dir = "RG_Kaori"
         # dir = "Ol.aMANDA_heavy"
-        # dir = "Mai Shiranui Bikini Red" #pb uv
+        #dir = "Mai Shiranui Bikini Red"
         # dir = "AlphaProt_Uli_Booli_Classy"
-        dir = "Bayonetta_Default_ Bayonetta"
-        # dir = "Bayonetta_nude_V2.5" #pb uv
+        # dir = "AlphaProt_Lazo_Girls_Brawn"
+        # dir = "AlphaProt_Lazo_Girls_Red"
+        #dir = "Bayonetta_Default_ Bayonetta"
+        #dir = "Bayonetta_nude_V2.5"
         # dir = "BnS-Gon-F002_NCSoft"
-        #dir, scale = "CANDY [B_A_O]", 1.5 #pb uv
+        #dir, scale = "CANDY [B_A_O]", 1.5
         # dir = "DeadOrAlive5_HelenaX2Venus"
         # dir = "Dixie_RR_XX"
         # dir = "DOA5_Christie_Dominatrix/Wet text"        
-        # dir = "DOA5U_Ayane_Intimate_TRDaz" #pb uv
+        #dir = "DOA5U_Ayane_Intimate_TRDaz"
         # dir = "DOA5_Kasumi_Hot_Getaway/Model"
-        # dir, scale = "Devil May Cry 4 - Trish", 1.5
+        #dir, scale = "Devil May Cry 4 - Trish", 1.5
         # dir = "DOA5-X2_Ayane_AquamarineSwimsuit_TRDaz"
         # dir = "DOA5_Kokoro_Cos7"
         # dir = "DOA5_Kokoro_Halloween"
-        # dir = "DOA5U_Christie_Halloween_TRDaz/DOA5U_Christie_Halloween_Hair1" #pb uv
+        #dir = "DOA5U_Christie_Halloween_TRDaz/DOA5U_Christie_Halloween_Hair1"
+        dir = "DOA5U_Helena_Halloween_TRDaz"        
         # dir = "DOA5U_Kasumi_Casual/Model/Braid"
-        # dir = "DOA5U_Rachel_Business/Model"
+        #dir = "DOA5U_Rachel_Business/Model"
         # dir = "DOA5U_Rachel_Casual/Model"
-        # dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
-        # dir = "Duke Nukem Forever_Kitty Pussoix"
-        # dir = "Blade&Soul - Gon female 1" #pb uv
-        # dir = "Blade&Soul - Jin female 01" #pb uv
+        #dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
+        #dir = "Duke Nukem Forever_Kitty Pussoix"
+        dir = "Duke_Nukem_by_Ventrue"
+        #dir = "Ivy_SCIV_bonus_pack_L2R/Ivy_1"
+        #dir = "Soul_Calibur_IV_Ivy by blufan and vega82"
+        #dir = "Kagura_Monokini_O_Z_K"
+        #dir = "Rachel Tropical DLC by RoxasKennedy/Normal"
+        #dir = "T_Rev_Eliza/Bigger Boobs"        
+        #dir = "Devil May Cry 4 - Gloria"
+        #dir = "Blade&Soul - Gon female 1"
+        #dir = "Blade&Soul - Jin female 01"
         # dir = "Blade&Soul - Jin female 03"
-        # dir = "Blade&Soul - Jin female Yuran" #pb uv
+        #dir = "Blade&Soul - Jin female Yuran"
         # dir = "BlackDesert_HumanFemale_Base"
         # dir = "DOA5U_Lisa_Hamilton_Tropical/Unmasked"
         # dir = "DOA5U_Tina_Armstrong_DOA2_Suit/Model"
         # dir = "DOA5U_Tina_Armstrong_Legacy/Model"
+        #dir = "DOA5U_Rachel_Nurse/Model" #pb uv        
+        # dir = "Injustice _Zatanna_Zatara/Zatana_Normal"
         # dir = "MOM_BIKINI"
-        dir, scale = "Natalia_Lingerie_KiD", .04        
-        self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)
+        #dir, scale = "Natalia_Lingerie_KiD", .04 
+        #dir = "Sefi_Naked"
+        #dir = "Sefi_FC"
+        #dir = "Alt_Sefi_SC"
+        # dir = "Rachael_Foley_RE_Revelation"
+        # dir = "Ruidia_FC"
+        #dir = "Def_Rudia_SC"
+        #dir = "Rumble Roses XX - Candy Cane (Superstar)"
+        if platform == 'android':
+            self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
+        else:
+            self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)
                 
         #scale = .03
         #self.texturename = 'Batman_Rabbit_Head_Posed/Batman_V3_Body_D.PNG'
@@ -169,6 +191,7 @@ class Renderer(Widget):
             if texture:
                 try:
                     texture = Image(texture).texture
+                    texture.wrap = 'repeat' #enable of uv support > 1 or <1
                     mesh.texture = texture
                 except: #no texture if not found or not supported
                     pass
@@ -185,12 +208,9 @@ class Renderer(Widget):
             )
 
         for meshid in range(0, len(self.scene.objects)):
-            # Draw sphere in the center
-            #sphere = self.scene.objects['Sphere']
+            # Draw each element
             mesh = self.scene.objects[meshid]
             #_set_color(0.7, 0.7, 0., id_color=(255, 255, 0))
-            #_draw_element(sphere, 'rock.png')
-            #_draw_element(sphere, 'bricks.png')
             if (mesh.diffuse != ""):
                 _draw_element(mesh, mesh.diffuse)
             else:
