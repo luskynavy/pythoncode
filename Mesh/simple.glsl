@@ -40,7 +40,9 @@ varying vec4 vertex_pos;
 
 uniform mat4 normal_mat;
 
-uniform sampler2D tex;
+// New uniform that will receive texture at index 1
+uniform sampler2D texture1;
+uniform sampler2D texture0;
 
 void main (void){
 	//correct normal, and compute light vector (assume light at the eye)
@@ -50,7 +52,10 @@ void main (void){
     float theta = clamp(dot(v_normal, v_light), 0.0, 1.0);
     gl_FragColor = vec4(theta, theta, theta, 1.0);
 
-    vec4 color = texture2D(tex, uv_vec);
-	color.a = 1.0; //disable alpha transparency
-    gl_FragColor = color;
+    vec4 color1 = texture2D(texture1, uv_vec);
+    vec4 color = texture2D(texture0, uv_vec);
+    //color = color * color1;
+//	color.a = 1.0; //disable alpha transparency
+    gl_FragColor = color*theta;
+    gl_FragColor.a = 1.0;
 }

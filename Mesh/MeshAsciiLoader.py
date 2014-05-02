@@ -1,5 +1,6 @@
 import os
 import math
+import time
 from struct import *
 #import numpy as np
 
@@ -105,9 +106,11 @@ class MeshAsciiLoader(object):
     
     def __init__(self, infile, scale):
         """Loads a Wavefront OBJ file. """
+        
+        t = time.clock()
         self.objects = [] #the MeshData list        
         
-        global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist, dirname
+        #global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist, dirname
         
         dirname = os.path.dirname(infile)
         if dirname != '':
@@ -158,8 +161,8 @@ class MeshAsciiLoader(object):
             
             vertexCount = int(ReadLineIgnoreComments(file))
             
-            vertexlist = []
-            UVCoords = []
+            #vertexlist = []
+            #UVCoords = []
             # faceslist = []
             
             #vertices
@@ -169,7 +172,7 @@ class MeshAsciiLoader(object):
                 y = float(tuple[1])
                 z = float(tuple[2])
                 #coords.append([x, -z, y])
-                vertexlist.extend([-x * scale, y * scale, -z * scale])
+                #vertexlist.extend([-x * scale, y * scale, -z * scale])
                 
                 #normals
                 tuple = ReadTuple(file)
@@ -186,15 +189,15 @@ class MeshAsciiLoader(object):
                 # colors.append([r, g, b, a])
                 
                 #uv per vertex
-                uvList = []
+                #uvList = []
                 for i in range(0, uvLayerCount):
                     tuple = ReadTuple(file)
                     u = float(tuple[0])
                     v = float(tuple[1])
                     #print u, v
                    
-                    uvList.append([u, 1 - v])
-                    UVCoords.append([u, v, 0])
+                    #uvList.append([u, 1 - v])
+                    #UVCoords.append([u, v, 0])
                 #uvs.append(uvList)
                 
                 mesh.vertices.extend([-x * scale, y * scale, -z * scale])
@@ -219,7 +222,7 @@ class MeshAsciiLoader(object):
             faceCount = int(ReadLineIgnoreComments(file))
             # print faceCount
             
-            indices = []
+            #indices = []
 
             #faces
             for i in range(0, faceCount):
@@ -228,7 +231,7 @@ class MeshAsciiLoader(object):
                 index2 = int(tuple[1])
                 index3 = int(tuple[2])
                 if (faceCount == 1):
-                    indices.append([1, 2, 3])
+                    #indices.append([1, 2, 3])
                     mesh.indices.extend([0,1,2])
                 else:
                     # indices.append([index1 + 1, index3 + 1, index2 + 1])
@@ -237,7 +240,7 @@ class MeshAsciiLoader(object):
 
             # mesh.faces.extend(indices, ignoreDups=True)
 
-            faces = []
+            '''faces = []
             # face_uvs = []
             # 
             # # Monkey 13
@@ -271,10 +274,11 @@ class MeshAsciiLoader(object):
                  
              except:
                  # print (str(faceID))
-                 pass
+                 pass'''
             
             #compute normals
-            
+            ''''t = time.clock()
+            Logger.debug("norm beg " + str(t))
             normPoints = []
             for i in range(len(vertexlist)):
                 normPoints.append(0)
@@ -329,10 +333,12 @@ class MeshAsciiLoader(object):
                 #mesh.vertices[i * 8 + 3] = n[0]
                 #mesh.vertices[i * 8 + 4] = n[1]
                 #mesh.vertices[i * 8 + 5] = n[2]
-                 
+            Logger.debug("norm end " + str(time.clock() - t))'''
             self.objects.append(mesh)
         
-        print 'nb vertex', len(vertexlist), ', nb faces', len(mesh.indices)
-        print 'nb UVCoords', len(UVCoords)
+        print 'nb vertex', vertexCount, ', nb faces', len(mesh.indices)
+        #print 'nb UVCoords', len(UVCoords)
         
         print 'self.objects ' + str(len(self.objects))
+        
+        Logger.debug("loaded in " + str(time.clock() - t))

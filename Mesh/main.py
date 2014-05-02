@@ -6,7 +6,7 @@ from kivy.uix.floatlayout import FloatLayout
 from kivy.graphics.opengl import glEnable, glDisable, GL_DEPTH_TEST
 from kivy.graphics import Canvas, Rectangle, Callback, PushMatrix, \
     PopMatrix, Color, Translate, Rotate, Scale, Mesh, ChangeState, \
-    UpdateNormalMatrix
+    UpdateNormalMatrix, BindTexture
 #from objloader import ObjFileLoader
 from pskloader import PSKFileLoader
 from MeshAsciiLoader import MeshAsciiLoader
@@ -17,11 +17,69 @@ from kivy.properties import ObjectProperty
 from kivy.core.image import Image
 from kivy.utils import platform
 
+from kivy.uix.button import Button
 
 class Renderer(Widget):
     texture = ObjectProperty(None, allownone=True)
+    
+    def load(self, *l):
+        print 'load'
+        if self.model == 0:
+            dir = "DOA5U_Helena_Halloween_TRDaz"
+            self.model = 1
+        else:
+            dir = "Duke Nukem Forever_Kitty Pussoix"
+            self.model = 0
+        scale = 3
+        #self.canvas.clear()
+        #self.canvas = Canvas()
+        self.fbo.remove_group('truc')
+        
+        if platform == 'android':
+            self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
+        else:
+            self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)
+            
+        '''for meshid in range(0, len(self.scene.objects)):
+            # Draw each element
+            m = self.scene.objects[meshid]
+            mesh = Mesh(
+                vertices=m.vertices,
+                indices=m.indices,
+                fmt=m.vertex_format,
+                mode='triangles',
+                group='truc',
+            )
+            self.fbo.add(mesh)'''
+        
+        '''self.draw_elements()        
+        self.canvas.ask_update()
+        self.fbo.ask_update()'''
+        
+        with self.fbo:
+            #ClearBuffers(clear_depth=True)
 
+            self.cb = Callback(self.setup_gl_context)
+            PushMatrix()
+            self.setup_scene()
+            PopMatrix()
+            self.cb = Callback(self.reset_gl_context)        
+        
+        #self.draw_elements()
+        
+    def change_shader(self, *l):
+        print 'change_shader'
+        if self.shader == 0:
+            self.fbo.shader.source = resource_find('flat.glsl')
+            self.mode = 1
+        else:
+            self.fbo.shader.source = resource_find('simple.glsl')
+            self.shader = 0
+        
+        
     def __init__(self, **kwargs):
+        self.model = 0
+        self.shader = 0 
         #self.canvas = RenderContext(compute_normal_mat=True)
         #self.canvas.shader.source = resource_find('simple.glsl')
         self.canvas = Canvas()
@@ -29,8 +87,8 @@ class Renderer(Widget):
         
         Logger.debug('******************************************************')
         scale = 3
-        #dir = "Pyro/Pyro Red"        
-        # dir = "Mai Venus Bikini"        
+        dir = "Pyro/Pyro Red"        
+        #dir = "Mai Venus Bikini"        
         #dir = "TRACY [B_A_O]"
         # dir = "Mai Shiranui Biniki 2"
         # dir = "Wrench_Girl_Fight/Default"
@@ -56,13 +114,13 @@ class Renderer(Widget):
         # dir = "DOA5_Kokoro_Cos7"
         # dir = "DOA5_Kokoro_Halloween"
         #dir = "DOA5U_Christie_Halloween_TRDaz/DOA5U_Christie_Halloween_Hair1"
-        dir = "DOA5U_Helena_Halloween_TRDaz"        
+        #dir = "DOA5U_Helena_Halloween_TRDaz"
         # dir = "DOA5U_Kasumi_Casual/Model/Braid"
         #dir = "DOA5U_Rachel_Business/Model"
         # dir = "DOA5U_Rachel_Casual/Model"
         #dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
-        #dir = "Duke Nukem Forever_Kitty Pussoix"
-        dir = "Duke_Nukem_by_Ventrue"
+        dir = "Duke Nukem Forever_Kitty Pussoix"
+        #dir = "Duke_Nukem_by_Ventrue"
         #dir = "Ivy_SCIV_bonus_pack_L2R/Ivy_1"
         #dir = "Soul_Calibur_IV_Ivy by blufan and vega82"
         #dir = "Kagura_Monokini_O_Z_K"
@@ -80,8 +138,9 @@ class Renderer(Widget):
         #dir = "DOA5U_Rachel_Nurse/Model" #pb uv        
         # dir = "Injustice _Zatanna_Zatara/Zatana_Normal"
         # dir = "MOM_BIKINI"
+        #dir = "Rumble Roses XX - Candy Cane (Superstar)"
         #dir, scale = "Natalia_Lingerie_KiD", .04 
-        #dir = "Sefi_Naked"
+        #dir = "Sefi/Sefi_Naked"
         #dir = "Sefi_FC"
         #dir = "Alt_Sefi_SC"
         # dir = "Rachael_Foley_RE_Revelation"
@@ -116,22 +175,32 @@ class Renderer(Widget):
                            clear_color=(0, 0, 0, 0.))
             self.viewport = Rectangle(size=self.size, pos=self.pos)
         self.fbo.shader.source = resource_find('simple.glsl')
-        #self.texture = self.fbo.texture
+        #self.texture = self.fbo.texture        
 
         super(Renderer, self).__init__(**kwargs)        
+        
+        self.fbo['texture1'] = 1        
 
         with self.fbo:
-            #ClearBuffers(clear_depth=True)
+            #ClearBuffers(clear_depth=True)            
 
             self.cb = Callback(self.setup_gl_context)
             PushMatrix()
             self.setup_scene()
             PopMatrix()
-            self.cb = Callback(self.reset_gl_context)
-
+            self.cb = Callback(self.reset_gl_context)        
+            
         Clock.schedule_interval(self.update_scene, 1 / 60.)
 
         self._touches = []
+        
+        button = Button(text='load')
+        button.bind(on_release=self.load)
+        super(Renderer, self).add_widget(button)
+                
+        button1 = Button(text='shader', center_x = 150)
+        button1.bind(on_release=self.change_shader)
+        super(Renderer, self).add_widget(button1)
 
     def on_size(self, instance, value):
         self.fbo.size = value
@@ -146,9 +215,9 @@ class Renderer(Widget):
         self.viewport.texture = value
 
     def setup_gl_context(self, *args):
-        #clear_buffer
+        #clear_buffer        
         glEnable(GL_DEPTH_TEST)
-        self.fbo.clear_buffer()
+        self.fbo.clear_buffer()        
         #glDepthMask(GL_FALSE);
 
     def reset_gl_context(self, *args):
@@ -170,7 +239,7 @@ class Renderer(Widget):
         # here just rotate scene for best view
         self.roty = Rotate(180, 0, 1, 0)
         self.scale = Scale(1)
-
+        
         UpdateNormalMatrix()
 
         self.draw_elements()
@@ -181,13 +250,15 @@ class Renderer(Widget):
         """ Draw separately all objects on the scene
             to setup separate rotation for each object
         """
-        def _draw_element(m, texture=''):
+        def _draw_element(m, texture='',texture1=''):
             mesh = Mesh(
                 vertices=m.vertices,
                 indices=m.indices,
                 fmt=m.vertex_format,
                 mode='triangles',
+                group='truc',
             )
+
             if texture:
                 try:
                     texture = Image(texture).texture
@@ -195,6 +266,12 @@ class Renderer(Widget):
                     mesh.texture = texture
                 except: #no texture if not found or not supported
                     pass
+            if texture1:
+                # set the texture1 to use texture index 1
+                #self.canvas['texture1'] = 1
+                # here, we are binding a custom texture at index 1
+                # this will be used as texture1 in shader.
+                BindTexture(source=texture1, index=1)
 
         def _set_color(*color, **kw):
             id_color = kw.pop('id_color', (0, 0, 0))
@@ -212,7 +289,9 @@ class Renderer(Widget):
             mesh = self.scene.objects[meshid]
             #_set_color(0.7, 0.7, 0., id_color=(255, 255, 0))
             if (mesh.diffuse != ""):
+                #_draw_element(mesh, mesh.diffuse, mesh.normal)
                 _draw_element(mesh, mesh.diffuse)
+                #_draw_element(mesh, mesh.normal)
             else:
                 _draw_element(mesh, self.texturename)
 
@@ -242,6 +321,7 @@ class Renderer(Widget):
         PopMatrix()'''
 
     def update_scene(self, *largs):
+        #self.draw_elements()        
         '''self.pyramid_rot.angle += 0.5
         self.box_rot.angle += 0.5
         self.cylinder_rot.angle += 0.5'''
@@ -257,10 +337,12 @@ class Renderer(Widget):
         self._touch = touch
         touch.grab(self)
         self._touches.append(touch)
+        return super(Renderer, self).on_touch_down(touch)
 
     def on_touch_up(self, touch):
         touch.ungrab(self)
         self._touches.remove(touch)
+        return super(Renderer, self).on_touch_up(touch)
 
     def on_touch_move(self, touch):
         self.update_glsl()
