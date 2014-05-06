@@ -18,27 +18,42 @@ from kivy.core.image import Image
 from kivy.utils import platform
 
 from kivy.uix.button import Button
+from kivy.uix.filechooser import FileChooserListView
 
 class Renderer(Widget):
     texture = ObjectProperty(None, allownone=True)
     
     def load(self, *l):
-        print 'load'
-        if self.model == 0:
+        if platform == 'android':
+            rep = "."
+        else:
+            rep = "../../Mesh"
+        self.fl = FileChooserListView(path = rep, rootpath = rep, filters = ["*.mesh.ascii"],
+                 dirselect=False, size=(400,400), center_x = 250, center_y = 250)
+        self.fl.bind(selection=self.on_selected)
+        super(Renderer, self).add_widget(self.fl)
+    
+    def on_selected(self, filechooser, selection):
+        print 'load', selection
+        super(Renderer, self).remove_widget(self.fl)
+        
+        '''if self.model == 0:
             dir = "DOA5U_Helena_Halloween_TRDaz"
             self.model = 1
         else:
             dir = "Duke Nukem Forever_Kitty Pussoix"
-            self.model = 0
+            self.model = 0'''
         scale = 3
         #self.canvas.clear()
         #self.canvas = Canvas()
         self.fbo.remove_group('truc')
         
-        if platform == 'android':
+        '''if platform == 'android':
             self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
         else:
-            self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)
+            self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)'''
+        
+        self.scene = MeshAsciiLoader(selection[0], scale)
             
         '''for meshid in range(0, len(self.scene.objects)):
             # Draw each element
@@ -71,7 +86,7 @@ class Renderer(Widget):
         print 'change_shader'
         if self.shader == 0:
             self.fbo.shader.source = resource_find('flat.glsl')
-            self.mode = 1
+            self.shader = 1
         else:
             self.fbo.shader.source = resource_find('simple.glsl')
             self.shader = 0
