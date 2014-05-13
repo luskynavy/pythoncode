@@ -3,6 +3,7 @@ from kivy.adapters.dictadapter import DictAdapter
 from kivy.uix.listview import ListItemButton, ListItemLabel
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
+from kivy.uix.filechooser import FileChooserListView
 
 import os
 from ftplib import FTP
@@ -19,7 +20,61 @@ remotePath = "/syncback/gen"
 
 class FTPView(GridLayout):
     def __init__(self, **kwargs):        
-        listftp = []
+        
+        self.ScanFTP()        
+        
+        kwargs['cols'] = 1
+        super(FTPView, self).__init__(**kwargs)
+        
+        args_converter = \
+            lambda row_index, rec: \
+                {'text': rec['text'],
+                 #'size_hint_x': .3,
+                 #'width' : 800,
+                 'height': 25,
+                 'cls_dicts': [{'cls': ListItemLabel,
+                        'kwargs': {'text': rec['text'][3]}},
+                       {'cls': ListItemLabel,
+                        'kwargs': {'text': rec['text'][0], 'size_hint_x':.3}},
+                       {'cls': ListItemLabel,
+                        'kwargs': {'text': rec['text'][1], 'size_hint_x':.02}},
+                       {'cls': ListItemLabel,
+                        'kwargs': {'text': rec['text'][2], 'size_hint_x':.3}}]}
+
+        item_strings = [self.listftp[index][3] for index in xrange(len(self.listftp))]
+        integers_dict =         { self.listftp[i][3]: {'text': self.listftp[i], 'is_selected': False} for i in xrange(len(self.listftp))}
+
+
+        dict_adapter = DictAdapter(#sorted_keys=item_strings,
+                                   data= integers_dict,
+                                   args_converter=args_converter,
+                                   selection_mode='single',
+                                   allow_empty_selection=False,
+                                   cls=CompositeListItem)
+
+        # Use the adapter in our ListView:
+        self.list_view = ListView(adapter=dict_adapter)
+        print "len", len(self.listftp), self.listftp
+       
+        #self.list_view = ListView(item_strings = self.listftp)
+       
+        self.buttonLoad = Button(text='Load', size_hint_y = .1)
+        self.buttonLoad.bind(on_release=self.Load)
+        
+        self.buttonDoIt = Button(text='Do it', size_hint_y = .1)
+        self.buttonDoIt.bind(on_release=self.DoIt)
+        
+        self.buttonCancel = Button(text='Cancel', size_hint_y = .1)#, center_x = 150)
+        self.buttonCancel.bind(on_release=self.Cancel)
+
+        self.add_widget(self.buttonLoad)
+        self.add_widget(self.list_view)
+        self.add_widget(self.buttonDoIt)
+        self.add_widget(self.buttonCancel)
+        
+    def ScanFTP(self):
+        self.listftp = []
+        self.listftp.append(["LOCAL", " ", "FTP", " "])
         
         file = open("ftp", "r")
         user = file.readline()
@@ -59,16 +114,16 @@ class FTPView(GridLayout):
                 
                 if localTime > remoteTime:
                     print "local is newer than remote :", localTime, remoteTime # must upload local then touch local file to synchronize time
-                    listftp.append([str(localTime), ">", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime), ">", str(remoteTime), localFile])
                 elif localTime == remoteTime:
                     print "local is same than remote :", localTime, remoteTime #nothing to do
-                    listftp.append([str(localTime), "=", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime), "=", str(remoteTime), localFile])
                 else:
                     print "local is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
-                    listftp.append([str(localTime), "<", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime), "<", str(remoteTime), localFile])
             else:
                 print localFile, " is not present on remote" #must upload local
-                listftp.append([str(localTime)[:19], " ", "", localFile])
+                self.listftp.append([str(localTime)[:19], " ", "", localFile])
 
 
         #check if new remote files must be downloaded
@@ -80,60 +135,29 @@ class FTPView(GridLayout):
                 except:
                     #error file not found me be downloaded 
                     print remoteFile, " is only present on remote"
-                    listftp.append(["", " ", str(remoteTime), remoteFile])
+                    self.listftp.append(["", " ", str(remoteTime), remoteFile])
 
         ftp.quit()
         
-        kwargs['cols'] = 1
-        super(FTPView, self).__init__(**kwargs)
+    def Load(self, *l):
+        print "Load"
         
-        args_converter = \
-            lambda row_index, rec: \
-                {'text': rec['text'],
-                 #'size_hint_x': .3,
-                 #'width' : 800,
-                 'height': 25,
-                 'cls_dicts': [{'cls': ListItemLabel,
-                        'kwargs': {'text': rec['text'][3]}},
-                       {'cls': ListItemLabel,
-                        'kwargs': {'text': rec['text'][0], 'size_hint_x':.3}},
-                       {'cls': ListItemLabel,
-                        'kwargs': {'text': rec['text'][1], 'size_hint_x':.02}},
-                       {'cls': ListItemLabel,
-                        'kwargs': {'text': rec['text'][2], 'size_hint_x':.3}}]}
-
-        item_strings = [listftp[index][2] for index in range(0, len(listftp))]
-        integers_dict =         { listftp[i][2]: {'text': listftp[i], 'is_selected': False} for i in range(0, len(listftp))}
-
-
-        dict_adapter = DictAdapter(#sorted_keys=item_strings,
-                                   data= integers_dict,
-                                   args_converter=args_converter,
-                                   selection_mode='single',
-                                   allow_empty_selection=False,
-                                   cls=CompositeListItem)
-
-        # Use the adapter in our ListView:
-        list_view = ListView(adapter=dict_adapter)
-       
-        #list_view = ListView(item_strings = list)
-       
-        
-        buttonDoIt = Button(text='Do it', size_hint_y = .1)
-        buttonDoIt.bind(on_release=self.DoIt)
-        
-        buttonCancel = Button(text='Cancel', size_hint_y = .1)#, center_x = 150)
-        buttonCancel.bind(on_release=self.Cancel)
-
-        self.add_widget(list_view)
-        self.add_widget(buttonDoIt)
-        self.add_widget(buttonCancel)
+        self.fl = FileChooserListView(path = ".", rootpath = ".", filters = ["*.*"],
+                 dirselect=False, size=(400,400), center_x = 250, center_y = 250)
+        self.fl.bind(selection=self.on_selected)
+        self.add_widget(self.fl)
+    
+    def on_selected(self, filechooser, selection):
+        print 'on_selected', selection
+        self.remove_widget(self.fl)
         
     def DoIt(self, *l):
         print "DoIt"
         
     def Cancel(self, *l):
         print "Cancel"
+        self.remove_widget(self.buttonDoIt)
+        self.add_widget(self.buttonDoIt)
     
         
 
