@@ -2,11 +2,13 @@ from kivy.uix.listview import ListView, CompositeListItem
 from kivy.adapters.dictadapter import DictAdapter
 from kivy.uix.listview import ListItemButton, ListItemLabel
 from kivy.uix.gridlayout import GridLayout
+#from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
-from kivy.uix.filechooser import FileChooserListView
+from kivy.uix.filechooser import FileChooserListView, FileChooserIconView
 
 import os
 from ftplib import FTP
+import time
 from datetime import datetime
 
 #localPath = "gen"
@@ -19,19 +21,17 @@ from datetime import datetime
 #remotePath = "/syncback/PPSSPP SAVEDATA/ULES01431GAMEDATA"
 
 class FTPView(GridLayout):
+#class FTPView(BoxLayout):
     def __init__(self, **kwargs):
         self.listftp = []
         
         self.first_time = 1        
         
+        #1 column for the global grid layout
         kwargs['cols'] = 1
         super(FTPView, self).__init__(**kwargs)
-        
-        '''self.localPath = "gen"
-        self.remotePath = "/syncback/gen"
-        self.ScanFTP()
-        self.BuildList()'''
-        
+    
+        #show the load button
         self.Load()
     
     def BuildList(self):
@@ -75,6 +75,7 @@ class FTPView(GridLayout):
         self.buttonCancel = Button(text = 'Cancel', size_hint_y = .1)#, center_x = 150)
         self.buttonCancel.bind(on_release = self.Cancel)
 
+        #add the widgets
         self.add_widget(self.buttonLoad)
         self.add_widget(self.list_view)
         self.add_widget(self.buttonDoIt)
@@ -82,8 +83,10 @@ class FTPView(GridLayout):
         
     def ScanFTP(self):
         self.listftp = []
+        #set the title
         self.listftp.append(["LOCAL", " ", "FTP", " "])
         
+        #read the user and password in a file
         file = open("ftp", "r")
         user = file.readline()
         mdp = file.readline()
@@ -93,15 +96,17 @@ class FTPView(GridLayout):
 
         ftp.cwd(self.remotePath)
 
+        #get remote files list
         remoteDir = ftp.nlst()
         print "remote: ", remoteDir
 
+        #get local files list
         localDir = os.listdir(self.localPath)
         print " local", localDir
 
         print
 
-        #check if files must be uploaded or downloaded
+        #check local files in remote
         for localFile in localDir:
             localTime = os.path.getmtime(os.path.join(self.localPath, localFile))
             localTime = datetime.utcfromtimestamp(localTime) #syncback seems to work in utc
@@ -120,21 +125,22 @@ class FTPView(GridLayout):
                 #print remoteTime
                 remoteTime = datetime.strptime(remoteTime[4:], "%Y%m%d%H%M%S")                
                 
+                #check time diff
                 if localTime > remoteTime:
                     print "local ", localFile, " is newer than remote :", localTime, remoteTime # must upload local then touch local file to synchronize time
-                    self.listftp.append([str(localTime), ">", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime)[:19], ">", str(remoteTime), localFile])
                 elif localTime == remoteTime:
                     print "local ", localFile, " is same than remote :", localTime, remoteTime #nothing to do
-                    self.listftp.append([str(localTime), "=", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime)[:19], "=", str(remoteTime), localFile])
                 else:
                     print "local ", localFile, " is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
-                    self.listftp.append([str(localTime), "<", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime)[:19], "<", str(remoteTime), localFile])
             else:
                 print localFile, " is not present on remote" #must upload local
-                self.listftp.append([str(localTime)[:19], " ", "", localFile])
+                self.listftp.append([str(localTime)[:19], "", "", localFile])
 
 
-        #check if new remote files must be downloaded
+        #check if new remote files must be downloaded (not present at all in local)
         for remoteFile in remoteDir:
             #skip . and ..
             if remoteFile != '.' and remoteFile != '..':
@@ -143,15 +149,17 @@ class FTPView(GridLayout):
                 except:
                     #error file not found me be downloaded 
                     print remoteFile, " is only present on remote"
-                    self.listftp.append(["", " ", str(remoteTime), remoteFile])
+                    self.listftp.append(["", "", str(remoteTime), remoteFile])
 
+        #close the connection
         ftp.quit()
         
     def Load(self, *l):
         print "Load"
         
-        self.fl = FileChooserListView(path = ".", rootpath = ".", filters = ["*.ftp"],
-                 dirselect=False)
+        self.fl = FileChooserIconView(path = ".", rootpath = ".", filters = ["*.ftp"],
+                 dirselect=False)#, size_hint_y = None)
+        #self.fl.height = 500
         self.fl.bind(selection = self.on_selected)
         self.add_widget(self.fl)
     
@@ -168,8 +176,8 @@ class FTPView(GridLayout):
         self.first_time = 0
             
         fileRead = open(selection[0], "r")
-        self.localPath = fileRead.readline().rstrip('\n')
-        self.remotePath = fileRead.readline().rstrip('\n')
+        self.localPath = fileRead.readline().rstrip('\n').rstrip('\r')
+        self.remotePath = fileRead.readline().rstrip('\n').rstrip('\r')
         fileRead.close()
         self.ScanFTP()
         
@@ -178,13 +186,70 @@ class FTPView(GridLayout):
     def DoIt(self, *l):
         print "DoIt"
         
+        #read the user and password in a file
+        file = open("ftp", "r")
+        user = file.readline()
+        mdp = file.readline()
+        file.close()
+
+        #connect
+        ftp = FTP("ftpperso.free.fr", user, mdp)
+
+        ftp.cwd(self.remotePath)
+        
+        for current_file in self.listftp:
+            if current_file[1] == ">":
+                print "must upload ", current_file[3]
+                self.upload(ftp, current_file[3])
+            elif current_file[1] == "<":
+                print "must download ", current_file[3], "and set time ", current_file[2]  
+                self.download(ftp, current_file[3], current_file[2])
+            elif current_file[1] == "" and current_file[0]:
+                print "must upload ", current_file[3]
+                self.upload(ftp, current_file[3])
+            elif current_file[1] == "" and current_file[2]:
+                print "must download ", current_file[3], "and set time ", current_file[2]
+                self.download(ftp, current_file[3], current_file[2])
+                
+        #close the connection
+        ftp.quit()
+        
     def Cancel(self, *l):
         print "Cancel"
         self.remove_widget(self.buttonDoIt)
         self.add_widget(self.buttonDoIt)
+        
+    def upload(self, ftp, filename):
+        fileup = open(os.path.join(self.localPath, filename), 'rb') # open the file
+        ftp.storbinary('STOR ' + filename, fileup) # send the file
+        fileup.close() # close the file
+        
+        #must set the localtime to the current time, so times are synchronized if allowed
+        try:
+            os.utime(os.path.join(self.localPath, filename), None)
+        except:
+            print "os.utime not permitted"
+    
+    def download(self, ftp, filename, remotetimestr):
+        # download the file        
+        lf = open(os.path.join(self.localPath, filename), "wb")
+        ftp.retrbinary("RETR " + filename, lf.write, 8*1024)
+        lf.close()
+        
+        #set the localtime to the remote time
+        # MUST CONVERT REMOTE TIME FROM UTC (add two hours for free)
+        dt = datetime.strptime(remotetimestr, "%Y-%m-%d %H:%M:%S")
+        print dt.strftime("%Y-%m-%d %H:%M:%S")
+        st = time.mktime(dt.timetuple())
+        print dt.timetuple(), st
+        #os.utime(os.path.join(self.localPath, filename), None) # allowed but useless since it is the actual time
+        try:
+            os.utime(os.path.join(self.localPath, filename), (st, st)) #OSError: [Errno 1] Operation not permitted: on android
+        except:
+            print "os.utime not permitted" 
     
         
 
 if __name__ == '__main__':
     from kivy.base import runTouchApp
-    runTouchApp(FTPView(width = 1280))
+    runTouchApp(FTPView())#width = 1280))
