@@ -111,8 +111,8 @@ class FTPView(GridLayout):
         #check local files in remote
         for localFile in localDir:
             localTime = os.path.getmtime(os.path.join(self.localPath, localFile))
-            localTime = datetime.utcfromtimestamp(localTime) #syncback seems to work in utc
-            #localTime = datetime.fromtimestamp(localTime)
+            #localTime = datetime.utcfromtimestamp(localTime) #syncback seems to work in utc #fix utc method 1
+            localTime = datetime.fromtimestamp(localTime) #fix utc method 2
                 
             try:
                 remoteIndex = remoteDir.index(localFile)
@@ -125,7 +125,8 @@ class FTPView(GridLayout):
                 #get ftp file time
                 remoteTime = ftp.sendcmd('MDTM ' + remoteDir[remoteIndex])
                 #print remoteTime
-                remoteTime = datetime.strptime(remoteTime[4:], "%Y%m%d%H%M%S")                
+                remoteTime = datetime.strptime(remoteTime[4:], "%Y%m%d%H%M%S") #fix utc method 1 : nothing    
+                remoteTime = remoteTime + (datetime.now() - datetime.utcnow()) #fix utc method 2            
                 
                 #check time diff
                 if abs((localTime - remoteTime).total_seconds()) < 10: #delta 10 seconds
@@ -140,15 +141,15 @@ class FTPView(GridLayout):
                                         
                     print "local ", localFile, " is same than remote :", localTime, remoteTime #nothing to do
                     if int(remoteSize[4:]) != localSize:
-                        self.listftp.append([str(localTime)[:19], "!!", str(remoteTime), localFile])                    
+                        self.listftp.append([str(localTime)[:19], "!!", str(remoteTime)[:19], localFile])                    
                     else:
-                        self.listftp.append([str(localTime)[:19], "=", str(remoteTime), localFile])
+                        self.listftp.append([str(localTime)[:19], "=", str(remoteTime)[:19], localFile])
                 elif localTime > remoteTime:
                     print "local ", localFile, " is newer than remote :", localTime, remoteTime, localTime - remoteTime # must upload local then touch local file to synchronize time
                     self.listftp.append([str(localTime)[:19], ">", str(remoteTime), localFile])
                 else:
                     print "local ", localFile, " is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
-                    self.listftp.append([str(localTime)[:19], "<", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime)[:19], "<", str(remoteTime)[:19], localFile])
             else:
                 print localFile, " is not present on remote" #must upload local
                 self.listftp.append([str(localTime)[:19], "", "", localFile])
@@ -163,7 +164,7 @@ class FTPView(GridLayout):
                 except:
                     #error file not found me be downloaded 
                     print remoteFile, " is only present on remote"
-                    self.listftp.append(["", "", str(remoteTime), remoteFile])
+                    self.listftp.append(["", "", str(remoteTime)[:19], remoteFile])
 
         #close the connection
         ftp.quit()
@@ -255,7 +256,8 @@ class FTPView(GridLayout):
         dt = datetime.strptime(remotetimestr, "%Y-%m-%d %H:%M:%S")
         print dt.strftime("%Y-%m-%d %H:%M:%S")
         st = time.mktime(dt.timetuple())
-        print dt.timetuple(), st
+        #st = time.mktime(dt.utctimetuple()) #fix utc method 1, 1h problem
+        #print dt.timetuple(), dt.utctimetuple(), st
         #os.utime(os.path.join(self.localPath, filename), None) # allowed but useless since it is the actual time
         try:
             os.utime(os.path.join(self.localPath, filename), (st, st)) #OSError: [Errno 1] Operation not permitted: on android
