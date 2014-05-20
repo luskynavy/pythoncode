@@ -10,6 +10,8 @@ import os
 from ftplib import FTP
 import time
 from datetime import datetime
+#from datetime import timedelta
+#from math import Math
 
 #localPath = "gen"
 #remotePath = "/syncback/gen"
@@ -49,7 +51,7 @@ class FTPView(GridLayout):
                        {'cls': ListItemLabel,
                         'kwargs': {'text': rec['text'][2], 'size_hint_x':.3}}]}
 
-        item_strings = [self.listftp[index][3] for index in xrange(len(self.listftp))]
+        #item_strings = [self.listftp[index][3] for index in xrange(len(self.listftp))]
         integers_dict = { self.listftp[i][3]: {'text': self.listftp[i], 'is_selected': False} for i in xrange(len(self.listftp))}
 
 
@@ -72,14 +74,14 @@ class FTPView(GridLayout):
         self.buttonDoIt = Button(text = 'Do it', size_hint_y = .1)
         self.buttonDoIt.bind(on_release = self.DoIt)
         
-        self.buttonCancel = Button(text = 'Cancel', size_hint_y = .1)#, center_x = 150)
-        self.buttonCancel.bind(on_release = self.Cancel)
+        #self.buttonCancel = Button(text = 'Cancel', size_hint_y = .1)#, center_x = 150)
+        #self.buttonCancel.bind(on_release = self.Cancel)
 
         #add the widgets
         self.add_widget(self.buttonLoad)
         self.add_widget(self.list_view)
         self.add_widget(self.buttonDoIt)
-        self.add_widget(self.buttonCancel)
+        #self.add_widget(self.buttonCancel)
         
     def ScanFTP(self):
         self.listftp = []
@@ -87,10 +89,10 @@ class FTPView(GridLayout):
         self.listftp.append(["LOCAL", " ", "FTP", " "])
         
         #read the user and password in a file
-        file = open("ftp", "r")
-        user = file.readline()
-        mdp = file.readline()
-        file.close()
+        fileaccount = open("ftp", "r")
+        user = fileaccount.readline()
+        mdp = fileaccount.readline()
+        fileaccount.close()
 
         ftp = FTP("ftpperso.free.fr", user, mdp)
 
@@ -126,12 +128,24 @@ class FTPView(GridLayout):
                 remoteTime = datetime.strptime(remoteTime[4:], "%Y%m%d%H%M%S")                
                 
                 #check time diff
-                if localTime > remoteTime:
-                    print "local ", localFile, " is newer than remote :", localTime, remoteTime # must upload local then touch local file to synchronize time
-                    self.listftp.append([str(localTime)[:19], ">", str(remoteTime), localFile])
-                elif localTime == remoteTime:
+                if abs((localTime - remoteTime).total_seconds()) < 10: #delta 10 seconds
+                #if localTime == remoteTime:
+                    #check size diff to test if copy was interrupted : "!!" if error in copy, "=" if size are same too 
+                    #get distant file size
+                    remoteSize = ftp.sendcmd('SIZE ' + remoteDir[remoteIndex])
+                    print "remote size :", int(remoteSize[4:])
+                    
+                    localSize = os.path.getsize(os.path.join(self.localPath, localFile))
+                    print "local size :", localSize
+                                        
                     print "local ", localFile, " is same than remote :", localTime, remoteTime #nothing to do
-                    self.listftp.append([str(localTime)[:19], "=", str(remoteTime), localFile])
+                    if int(remoteSize[4:]) != localSize:
+                        self.listftp.append([str(localTime)[:19], "!!", str(remoteTime), localFile])                    
+                    else:
+                        self.listftp.append([str(localTime)[:19], "=", str(remoteTime), localFile])
+                elif localTime > remoteTime:
+                    print "local ", localFile, " is newer than remote :", localTime, remoteTime, localTime - remoteTime # must upload local then touch local file to synchronize time
+                    self.listftp.append([str(localTime)[:19], ">", str(remoteTime), localFile])
                 else:
                     print "local ", localFile, " is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
                     self.listftp.append([str(localTime)[:19], "<", str(remoteTime), localFile])
@@ -171,7 +185,7 @@ class FTPView(GridLayout):
             self.remove_widget(self.buttonLoad)
             self.remove_widget(self.list_view)
             self.remove_widget(self.buttonDoIt)
-            self.remove_widget(self.buttonCancel)
+            #self.remove_widget(self.buttonCancel)
             
         self.first_time = 0
             
@@ -187,10 +201,10 @@ class FTPView(GridLayout):
         print "DoIt"
         
         #read the user and password in a file
-        file = open("ftp", "r")
-        user = file.readline()
-        mdp = file.readline()
-        file.close()
+        fileaccount = open("ftp", "r")
+        user = fileaccount.readline()
+        mdp = fileaccount.readline()
+        fileaccount.close()
 
         #connect
         ftp = FTP("ftpperso.free.fr", user, mdp)
@@ -203,7 +217,7 @@ class FTPView(GridLayout):
                 self.upload(ftp, current_file[3])
             elif current_file[1] == "<":
                 print "must download ", current_file[3], "and set time ", current_file[2]  
-                self.download(ftp, current_file[3], current_file[2])
+                self.download(ftp, current_file[3], current_file[2])            
             elif current_file[1] == "" and current_file[0]:
                 print "must upload ", current_file[3]
                 self.upload(ftp, current_file[3])
@@ -214,10 +228,10 @@ class FTPView(GridLayout):
         #close the connection
         ftp.quit()
         
-    def Cancel(self, *l):
+    '''def Cancel(self, *l):
         print "Cancel"
         self.remove_widget(self.buttonDoIt)
-        self.add_widget(self.buttonDoIt)
+        self.add_widget(self.buttonDoIt)'''
         
     def upload(self, ftp, filename):
         fileup = open(os.path.join(self.localPath, filename), 'rb') # open the file
@@ -246,8 +260,7 @@ class FTPView(GridLayout):
         try:
             os.utime(os.path.join(self.localPath, filename), (st, st)) #OSError: [Errno 1] Operation not permitted: on android
         except:
-            print "os.utime not permitted" 
-    
+            print "os.utime not permitted"     
         
 
 if __name__ == '__main__':
