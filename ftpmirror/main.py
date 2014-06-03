@@ -146,7 +146,7 @@ class FTPView(GridLayout):
                         self.listftp.append([str(localTime)[:19], "=", str(remoteTime)[:19], localFile])
                 elif localTime > remoteTime:
                     print "local ", localFile, " is newer than remote :", localTime, remoteTime, localTime - remoteTime # must upload local then touch local file to synchronize time
-                    self.listftp.append([str(localTime)[:19], ">", str(remoteTime), localFile])
+                    self.listftp.append([str(localTime)[:19], ">", str(remoteTime)[:19], localFile])
                 else:
                     print "local ", localFile, " is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
                     self.listftp.append([str(localTime)[:19], "<", str(remoteTime)[:19], localFile])
