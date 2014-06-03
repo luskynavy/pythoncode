@@ -54,21 +54,8 @@ class Renderer(Widget):
             self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)'''
         
         self.scene = MeshAsciiLoader(selection[0], scale)
-            
-        '''for meshid in range(0, len(self.scene.objects)):
-            # Draw each element
-            m = self.scene.objects[meshid]
-            mesh = Mesh(
-                vertices=m.vertices,
-                indices=m.indices,
-                fmt=m.vertex_format,
-                mode='triangles',
-                group='truc',
-            )
-            self.fbo.add(mesh)'''
-        
-        '''self.draw_elements()        
-        self.canvas.ask_update()
+                    
+        '''self.canvas.ask_update()
         self.fbo.ask_update()'''
         
         with self.fbo:
@@ -84,11 +71,12 @@ class Renderer(Widget):
         
     def change_shader(self, *l):
         print 'change_shader'
-        if self.shader == 0:
-            self.fbo.shader.source = resource_find('flat.glsl')
+        if self.shader == 0:            
+            self.fbo.shader.source = resource_find('simple.glsl')
             self.shader = 1
         else:
-            self.fbo.shader.source = resource_find('simple.glsl')
+            #self.fbo.shader.source = resource_find('flat.glsl')            
+            self.fbo.shader.source = resource_find('normalmap.glsl')
             self.shader = 0
         
         
@@ -189,17 +177,23 @@ class Renderer(Widget):
                            compute_normal_mat=True,
                            clear_color=(0, 0, 0, 0.))
             self.viewport = Rectangle(size=self.size, pos=self.pos)
-        self.fbo.shader.source = resource_find('simple.glsl')
+        #self.fbo.shader.source = resource_find('simple.glsl')
+        self.fbo.shader.source = resource_find('normalmap.glsl')
         #self.texture = self.fbo.texture        
 
-        super(Renderer, self).__init__(**kwargs)        
+        super(Renderer, self).__init__(**kwargs)
         
-        self.fbo['texture1'] = 1        
+        self.fbo['texture1'] = 1
+        self.fbo['toggletexture'] = 1      
 
         with self.fbo:
             #ClearBuffers(clear_depth=True)            
 
             self.cb = Callback(self.setup_gl_context)
+            glEnable(0x4000) #GL_LIGHT0)                              #Quick And Dirty Lighting (Assumes Light0 Is Set Up)
+            glEnable(0xB50) #GL_LIGHTING)                            #Enable Lighting
+            glEnable(0xB57) #GL_COLOR_MATERIAL)                      #Enable Material Coloring
+
             PushMatrix()
             self.setup_scene()
             PopMatrix()
@@ -304,8 +298,8 @@ class Renderer(Widget):
             mesh = self.scene.objects[meshid]
             #_set_color(0.7, 0.7, 0., id_color=(255, 255, 0))
             if (mesh.diffuse != ""):
-                #_draw_element(mesh, mesh.diffuse, mesh.normal)
-                _draw_element(mesh, mesh.diffuse)
+                _draw_element(mesh, mesh.diffuse, mesh.normal)
+                #_draw_element(mesh, mesh.diffuse)
                 #_draw_element(mesh, mesh.normal)
             else:
                 _draw_element(mesh, self.texturename)
