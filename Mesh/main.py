@@ -184,15 +184,12 @@ class Renderer(Widget):
         super(Renderer, self).__init__(**kwargs)
         
         self.fbo['texture1'] = 1
-        self.fbo['toggletexture'] = 1      
+        self.fbo['toggletexture'] = 1
 
         with self.fbo:
             #ClearBuffers(clear_depth=True)            
 
             self.cb = Callback(self.setup_gl_context)
-            glEnable(0x4000) #GL_LIGHT0)                              #Quick And Dirty Lighting (Assumes Light0 Is Set Up)
-            glEnable(0xB50) #GL_LIGHTING)                            #Enable Lighting
-            glEnable(0xB57) #GL_COLOR_MATERIAL)                      #Enable Material Coloring
 
             PushMatrix()
             self.setup_scene()
@@ -236,7 +233,16 @@ class Renderer(Widget):
         asp = self.width / float(self.height)
         proj = Matrix().view_clip(-asp, asp, -1, 1, 1, 500, 1)
         self.fbo['projection_mat'] = proj
-
+        self.fbo['diffuse_light'] = (1.0, 0.0, 0.0)
+        self.fbo['ambient_light'] = (0.1, 0.1, 0.1)
+        self.fbo['glLightSource0_position'] = (1.0, 0.0, 0.0, 0.0)
+        self.fbo['glLightSource0_spotCutoff'] = 360
+        self.fbo['glLightModel_ambient'] = (0.2, 0.2, 0.2, 1.0)
+        self.fbo['glLightSource0_diffuse'] = (0.7, 0.7, 0.7, 1.0)
+        self.fbo['glLightSource0_specular'] = (.1, .1, .1, 1.0)
+        self.fbo['glFrontMaterial_specular'] = (.10, .10, .10, 1.0)
+        self.fbo['glFrontMaterial_shininess'] = 0.1
+        
     def setup_scene(self):
         Color(.5, .5, .5, 0)
 
@@ -260,6 +266,17 @@ class Renderer(Widget):
             to setup separate rotation for each object
         """
         def _draw_element(m, texture='',texture1=''):
+            #bind the texture BEFORE the draw (Mesh) 
+            if texture1:
+                # set the texture1 to use texture index 1
+                #self.canvas['texture1'] = 1
+                # here, we are binding a custom texture at index 1
+                # this will be used as texture1 in shader.
+                tex1 = Image(texture1).texture
+                tex1.wrap = 'repeat' #enable of uv support > 1 or <1
+                #BindTexture(source=texture1, index=1)
+                BindTexture(texture=tex1, index=1)
+                
             mesh = Mesh(
                 vertices=m.vertices,
                 indices=m.indices,
@@ -274,13 +291,7 @@ class Renderer(Widget):
                     texture.wrap = 'repeat' #enable of uv support > 1 or <1
                     mesh.texture = texture
                 except: #no texture if not found or not supported
-                    pass
-            if texture1:
-                # set the texture1 to use texture index 1
-                #self.canvas['texture1'] = 1
-                # here, we are binding a custom texture at index 1
-                # this will be used as texture1 in shader.
-                BindTexture(source=texture1, index=1)
+                    pass            
 
         def _set_color(*color, **kw):
             id_color = kw.pop('id_color', (0, 0, 0))

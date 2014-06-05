@@ -10,6 +10,7 @@ attribute vec3 v_normal;
 
 uniform mat4 modelview_mat;
 uniform mat4 projection_mat;
+uniform mat4 normal_mat;
 
 varying vec4 normal_vec;
 varying vec4 vertex_pos;
@@ -32,19 +33,19 @@ void main (void) {
 	
 	//vec3 tangent = normalize(gl_NormalMatrix * (gl_Color.rgb - 0.5)); //maybe
     //vec3 tangent = vec3(0,0,1);
-    vec3 tangent = normalize(cross(vec3(0,1,0), gl_Normal.xyz));
+    vec3 tangent = normalize(cross(vec3(0,1,0), normal_vec.xyz));
     // the signs and whether tangent is in localSurface2View[1]
     // or localSurface2View[0] depends on the tangent
     // attribute, texture coordinates, and the encoding
     // of the normal map
-    localSurface2View[0] = normalize(vec3(gl_ModelViewMatrix * vec4(vec3(tangent), 0.0)));
+    localSurface2View[0] = normalize(vec3(modelview_mat * vec4(tangent, 0.0)));
     //localSurface2View[0]= vec3(1,0,0);
-    localSurface2View[2] = normalize(gl_NormalMatrix * gl_Normal);
+    localSurface2View[2] = normalize(normal_mat * normal_vec);
     localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
 
 
     texCoords = v_tc0;
-    position = gl_ModelViewMatrix * gl_Vertex;
+    position = modelview_mat * vec4(v_pos,1.0);
 }
 
 
@@ -70,16 +71,24 @@ uniform int toggletexture; // false/true
 uniform sampler2D texture1;
 uniform sampler2D tex;
 
+uniform vec4 glLightSource0_position;
+uniform float glLightSource0_spotCutoff;
+uniform vec4 glLightModel_ambient;
+uniform vec4 glLightSource0_diffuse;
+uniform vec4 glLightSource0_specular;
+uniform vec4 glFrontMaterial_specular;
+uniform float glFrontMaterial_shininess;
+
 
 void main()
 {
     //vec4 texColor = vec4(texture2D(color_texture, gl_TexCoord[0].st).rgb, 1.0);
-    vec4 texColor =  texture2D(tex, texCoords);
+    vec4 texColor =  texture2D(tex, texCoords);	
 	
 	if (toggletexture == 0)
         texColor = vec4(0.75, 0.75, 0.75, 1.0);//gl_FrontMaterial.ambient;
 
-    vec4 encodedNormal = texture2D(texture1, vec2(texCoords));
+    vec4 encodedNormal = texture2D(texture1, texCoords);
 
     //vec3 localCoords = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb * 2. - 1.);
     //vec3 localCoords   = normalize( texture2D(normal_texture, gl_TexCoord[0].st).rgb);
@@ -94,21 +103,20 @@ void main()
     vec3 lightDirection;
     float attenuation;
 	
-	//if (0.0 == gl_LightSource[0].position.w)
-	if (1)
+	if (0.0 == glLightSource0_position.w)
     // directional light?
     {
        attenuation = 1.0; // no attenuation
-       lightDirection = normalize(vec3(gl_LightSource[0].position));
+       lightDirection = normalize(vec3(glLightSource0_position));
     }
     else // point light or spotlight (or other kind of light)
     {
-       vec3 positionToLightSource = vec3(gl_LightSource[0].position - position);
+       vec3 positionToLightSource = vec3(glLightSource0_position - position);
        float distance = length(positionToLightSource);
        attenuation = 1.0 / distance; // linear attenuation
        lightDirection = normalize(positionToLightSource);
 
-       if (gl_LightSource[0].spotCutoff <= 90.0) // spotlight?
+       /*if (glLightSource0_spotCutoff <= 90.0) // spotlight?
        {
           float clampedCosine = max(0.0, dot(-lightDirection, gl_LightSource[0].spotDirection));
           if (clampedCosine < gl_LightSource[0].spotCosCutoff)
@@ -120,14 +128,14 @@ void main()
           {
              attenuation = attenuation * pow(clampedCosine, gl_LightSource[0].spotExponent);
           }
-       }
+       }*/
     }
 	
-	vec3 ambientLighting = vec3(gl_LightModel.ambient)
+	vec3 ambientLighting = vec3(glLightModel_ambient)
        * vec3(texColor);//* vec3(gl_FrontMaterial.emission);
 
     vec3 diffuseReflection = 1.//attenuation
-       * vec3(gl_LightSource[0].diffuse)
+       * vec3(glLightSource0_diffuse)
        * vec3(texColor)//* vec3(gl_FrontMaterial.emission)
        * max(0.0, dot(normalDirection, lightDirection));
 
@@ -141,11 +149,11 @@ void main()
     else // light source on the right side
     {
        specularReflection = attenuation
-          * vec3(gl_LightSource[0].specular)
-          * vec3(gl_FrontMaterial.specular)
+          * vec3(glLightSource0_specular)
+          * vec3(glFrontMaterial_specular)
           * pow(max(0.0, dot(reflect(-lightDirection,
           normalDirection), viewDirection)),
-          gl_FrontMaterial.shininess);
+          glFrontMaterial_shininess);
     }
 
     gl_FragColor = vec4(
