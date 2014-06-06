@@ -40,7 +40,7 @@ void main (void) {
     // of the normal map
     localSurface2View[0] = normalize(vec3(modelview_mat * vec4(tangent, 0.0)));
     //localSurface2View[0]= vec3(1,0,0);
-    localSurface2View[2] = normalize(normal_mat * normal_vec);
+    localSurface2View[2] = vec3(normalize(normal_mat * normal_vec));
     localSurface2View[1] = normalize(cross(localSurface2View[2], localSurface2View[0]));
 
 

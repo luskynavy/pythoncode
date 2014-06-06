@@ -24,6 +24,8 @@ class Renderer(Widget):
     texture = ObjectProperty(None, allownone=True)
     
     def load(self, *l):
+        self.button.disabled = True
+
         if platform == 'android':
             rep = "."
         else:
@@ -34,6 +36,8 @@ class Renderer(Widget):
         super(Renderer, self).add_widget(self.fl)
     
     def on_selected(self, filechooser, selection):
+        self.button.disabled = False
+        
         print 'load', selection
         super(Renderer, self).remove_widget(self.fl)
         
@@ -200,9 +204,9 @@ class Renderer(Widget):
 
         self._touches = []
         
-        button = Button(text='load')
-        button.bind(on_release=self.load)
-        super(Renderer, self).add_widget(button)
+        self.button = Button(text='load')
+        self.button.bind(on_release=self.load)
+        super(Renderer, self).add_widget(self.button)
                 
         button1 = Button(text='shader', center_x = 150)
         button1.bind(on_release=self.change_shader)
@@ -235,7 +239,7 @@ class Renderer(Widget):
         self.fbo['projection_mat'] = proj
         self.fbo['diffuse_light'] = (1.0, 0.0, 0.0)
         self.fbo['ambient_light'] = (0.1, 0.1, 0.1)
-        self.fbo['glLightSource0_position'] = (1.0, 0.0, 0.0, 0.0)
+        self.fbo['glLightSource0_position'] = (1.0, 1.0, 1.0, 0.0)
         self.fbo['glLightSource0_spotCutoff'] = 360
         self.fbo['glLightModel_ambient'] = (0.2, 0.2, 0.2, 1.0)
         self.fbo['glLightSource0_diffuse'] = (0.7, 0.7, 0.7, 1.0)
@@ -273,9 +277,10 @@ class Renderer(Widget):
                 # here, we are binding a custom texture at index 1
                 # this will be used as texture1 in shader.
                 tex1 = Image(texture1).texture
-                tex1.wrap = 'repeat' #enable of uv support > 1 or <1
-                #BindTexture(source=texture1, index=1)
+                tex1.wrap = 'repeat' #enable of uv support >1 or <0                
                 BindTexture(texture=tex1, index=1)
+            else:
+                BindTexture(source="", index=1)
                 
             mesh = Mesh(
                 vertices=m.vertices,
@@ -288,7 +293,7 @@ class Renderer(Widget):
             if texture:
                 try:
                     texture = Image(texture).texture
-                    texture.wrap = 'repeat' #enable of uv support > 1 or <1
+                    texture.wrap = 'repeat' #enable of uv support >1 or <0
                     mesh.texture = texture
                 except: #no texture if not found or not supported
                     pass            
