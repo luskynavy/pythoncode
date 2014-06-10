@@ -8,7 +8,7 @@ from kivy.graphics import Canvas, Rectangle, Callback, PushMatrix, \
     PopMatrix, Color, Translate, Rotate, Scale, Mesh, ChangeState, \
     UpdateNormalMatrix, BindTexture
 #from objloader import ObjFileLoader
-from pskloader import PSKFileLoader
+#from pskloader import PSKFileLoader
 from MeshAsciiLoader import MeshAsciiLoader
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
@@ -41,27 +41,12 @@ class Renderer(Widget):
         print 'load', selection
         super(Renderer, self).remove_widget(self.fl)
         
-        '''if self.model == 0:
-            dir = "DOA5U_Helena_Halloween_TRDaz"
-            self.model = 1
-        else:
-            dir = "Duke Nukem Forever_Kitty Pussoix"
-            self.model = 0'''
         scale = 3
-        #self.canvas.clear()
-        #self.canvas = Canvas()
-        self.fbo.remove_group('truc')
-        
-        '''if platform == 'android':
-            self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
-        else:
-            self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)'''
+        self.fbo.remove_group('truc')        
         
         self.scene = MeshAsciiLoader(selection[0], scale)
                     
-        '''self.canvas.ask_update()
-        self.fbo.ask_update()'''
-        
+       
         with self.fbo:
             #ClearBuffers(clear_depth=True)
 
@@ -69,9 +54,7 @@ class Renderer(Widget):
             PushMatrix()
             self.setup_scene()
             PopMatrix()
-            self.cb = Callback(self.reset_gl_context)        
-        
-        #self.draw_elements()
+            self.cb = Callback(self.reset_gl_context)    
         
     def change_shader(self, *l):
         print 'change_shader'
@@ -87,73 +70,17 @@ class Renderer(Widget):
     def __init__(self, **kwargs):
         self.model = 0
         self.shader = 0 
-        #self.canvas = RenderContext(compute_normal_mat=True)
-        #self.canvas.shader.source = resource_find('simple.glsl')
         self.canvas = Canvas()
         #self.scene = ObjFileLoader(resource_find("testnurbs.obj"))
         
         Logger.debug('******************************************************')
         scale = 3
-        dir = "Pyro/Pyro Red"        
-        #dir = "Mai Venus Bikini"        
-        #dir = "TRACY [B_A_O]"
-        # dir = "Mai Shiranui Biniki 2"
-        # dir = "Wrench_Girl_Fight/Default"
-        # dir, scale = "Scarllet_Lingerie_KiD/Scarllet_Lingerie", .04
-        #dir, scale = "Rumble_Roses_XX_Lady_X_Substance_by_darkblueking", 15
-        # dir = "RG_Kaori"
-        # dir = "Ol.aMANDA_heavy"
-        #dir = "Mai Shiranui Bikini Red"
-        # dir = "AlphaProt_Uli_Booli_Classy"
-        # dir = "AlphaProt_Lazo_Girls_Brawn"
-        # dir = "AlphaProt_Lazo_Girls_Red"
-        #dir = "Bayonetta_Default_ Bayonetta"
-        #dir = "Bayonetta_nude_V2.5"
-        # dir = "BnS-Gon-F002_NCSoft"
-        #dir, scale = "CANDY [B_A_O]", 1.5
-        # dir = "DeadOrAlive5_HelenaX2Venus"
-        # dir = "Dixie_RR_XX"
-        # dir = "DOA5_Christie_Dominatrix/Wet text"        
-        #dir = "DOA5U_Ayane_Intimate_TRDaz"
-        # dir = "DOA5_Kasumi_Hot_Getaway/Model"
-        #dir, scale = "Devil May Cry 4 - Trish", 1.5
-        # dir = "DOA5-X2_Ayane_AquamarineSwimsuit_TRDaz"
-        # dir = "DOA5_Kokoro_Cos7"
-        # dir = "DOA5_Kokoro_Halloween"
-        #dir = "DOA5U_Christie_Halloween_TRDaz/DOA5U_Christie_Halloween_Hair1"
-        #dir = "DOA5U_Helena_Halloween_TRDaz"
-        # dir = "DOA5U_Kasumi_Casual/Model/Braid"
-        #dir = "DOA5U_Rachel_Business/Model"
-        # dir = "DOA5U_Rachel_Casual/Model"
+        #dir = "Pyro/Pyro Red"
         #dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
-        dir = "Duke Nukem Forever_Kitty Pussoix"
-        #dir = "Duke_Nukem_by_Ventrue"
-        #dir = "Ivy_SCIV_bonus_pack_L2R/Ivy_1"
-        #dir = "Soul_Calibur_IV_Ivy by blufan and vega82"
-        #dir = "Kagura_Monokini_O_Z_K"
-        #dir = "Rachel Tropical DLC by RoxasKennedy/Normal"
-        #dir = "T_Rev_Eliza/Bigger Boobs"        
-        #dir = "Devil May Cry 4 - Gloria"
-        #dir = "Blade&Soul - Gon female 1"
-        #dir = "Blade&Soul - Jin female 01"
-        # dir = "Blade&Soul - Jin female 03"
-        #dir = "Blade&Soul - Jin female Yuran"
-        # dir = "BlackDesert_HumanFemale_Base"
-        # dir = "DOA5U_Lisa_Hamilton_Tropical/Unmasked"
-        # dir = "DOA5U_Tina_Armstrong_DOA2_Suit/Model"
-        # dir = "DOA5U_Tina_Armstrong_Legacy/Model"
-        #dir = "DOA5U_Rachel_Nurse/Model" #pb uv        
-        # dir = "Injustice _Zatanna_Zatara/Zatana_Normal"
-        # dir = "MOM_BIKINI"
-        #dir = "Rumble Roses XX - Candy Cane (Superstar)"
-        #dir, scale = "Natalia_Lingerie_KiD", .04 
-        #dir = "Sefi/Sefi_Naked"
-        #dir = "Sefi_FC"
-        #dir = "Alt_Sefi_SC"
-        # dir = "Rachael_Foley_RE_Revelation"
-        # dir = "Ruidia_FC"
-        #dir = "Def_Rudia_SC"
-        #dir = "Rumble Roses XX - Candy Cane (Superstar)"
+        #dir = "Duke Nukem Forever_Kitty Pussoix"
+        dir = "Duke_Nukem_by_Ventrue"
+        #dir = "DOA5U_Rachel_Nurse/Model" #pb uv
+                
         if platform == 'android':
             self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
         else:
@@ -166,14 +93,8 @@ class Renderer(Widget):
         #self.scene = PSKFileLoader(resource_find("Gray/Mike_TPP.psk"), scale) #too many indices, good for split test
         #self.texturename = 'CV_Talia/Talia_Body_D.tga'
         #self.texturename = 'CV_Talia/Talia_Legs_D.tga')
-        #self.scene = PSKFileLoader(resource_find("CV_Talia/Talia_posed.psk"), scale) #too many indices, good for split test
-        #self.texturename = 'AlphaProt_Uli_Booli_Classy/Uli_body_02_D2.tga'
-        #self.texturename = 'AlphaProt_Uli_Booli_Classy/Uli_new_UV_DAO.tga'
-        #self.scene = PSKFileLoader(resource_find("AlphaProt_Uli_Booli_Classy/NPC_Uli_NightDress.psk"), .07)
-        #self.scene = PSKFileLoader(resource_find("AlphaProt_Uli_Booli_Classy/NPC_Uli_Head.psk"), scale)
-        Logger.debug('******************************************************')
-
-        #self.meshes = []
+        #self.scene = PSKFileLoader(resource_find("CV_Talia/Talia_posed.psk"), scale) #too many indices, good for split test        
+        Logger.debug('******************************************************')        
 
         with self.canvas:
             self.fbo = Fbo(size=self.size,
@@ -183,7 +104,6 @@ class Renderer(Widget):
             self.viewport = Rectangle(size=self.size, pos=self.pos)
         #self.fbo.shader.source = resource_find('simple.glsl')
         self.fbo.shader.source = resource_find('normalmap.glsl')
-        #self.texture = self.fbo.texture        
 
         super(Renderer, self).__init__(**kwargs)
         
@@ -271,15 +191,14 @@ class Renderer(Widget):
         """
         def _draw_element(m, texture='',texture1=''):
             #bind the texture BEFORE the draw (Mesh) 
-            if texture1:
-                # set the texture1 to use texture index 1
-                #self.canvas['texture1'] = 1
+            if texture1:                
                 # here, we are binding a custom texture at index 1
                 # this will be used as texture1 in shader.
                 tex1 = Image(texture1).texture
                 tex1.wrap = 'repeat' #enable of uv support >1 or <0                
                 BindTexture(texture=tex1, index=1)
-            else:
+            #clear the texture if none
+            else:                
                 BindTexture(source="", index=1)
                 
             mesh = Mesh(
@@ -319,38 +238,9 @@ class Renderer(Widget):
                 #_draw_element(mesh, mesh.normal)
             else:
                 _draw_element(mesh, self.texturename)
-
-        # Then draw other elements and totate it in different axis
-        #pyramid = self.scene.objects['Pyramid']
-        '''pyramid = self.scene.objects[1]
-        PushMatrix()
-        self.pyramid_rot = Rotate(0, 0, 0, 1)
-        _set_color(0., 0., .7, id_color=(0., 0., 255))
-        _draw_element(pyramid, 'rain.png')
-        PopMatrix()
-
-        #box = self.scene.objects['Box']
-        box = self.scene.objects[2]
-        PushMatrix()
-        self.box_rot = Rotate(0, 0, 1, 0)
-        _set_color(.7, 0., 0., id_color=(255, 0., 0))
-        _draw_element(box, 'bricks.png')
-        PopMatrix()
-
-        #cylinder = self.scene.objects['Cylinder']
-        cylinder = self.scene.objects[3]
-        PushMatrix()
-        self.cylinder_rot = Rotate(0, 1, 0, 0)
-        _set_color(0.0, .7, 0., id_color=(0., 255, 0))
-        _draw_element(cylinder, 'wood.png')
-        PopMatrix()'''
-
+        
     def update_scene(self, *largs):
-        #self.draw_elements()        
-        '''self.pyramid_rot.angle += 0.5
-        self.box_rot.angle += 0.5
-        self.cylinder_rot.angle += 0.5'''
-
+        pass
     # ============= All stuff after is for trackball implementation ===========
 
     def define_rotate_angle(self, touch):
@@ -418,8 +308,7 @@ class RendererApp(App):
     def build(self):
         root = FloatLayout()
         renderer = Renderer()
-        root.add_widget(renderer)
-        #root.add_widget(btn)
+        root.add_widget(renderer)        
         return root
 
 
