@@ -19,6 +19,10 @@ from kivy.utils import platform
 
 from kivy.uix.button import Button
 from kivy.uix.filechooser import FileChooserListView
+import os
+
+#default mesh dir
+meshdir = "../../Mesh/"
 
 class Renderer(Widget):
     texture = ObjectProperty(None, allownone=True)
@@ -26,12 +30,21 @@ class Renderer(Widget):
     def load(self, *l):
         self.button.disabled = True
 
-        if platform == 'android':
+        
+        if os.path.isdir(meshdir):
+            rep = meshdir
+            self.fl = FileChooserListView(path = rep, rootpath = rep, filters = ["*.mesh.ascii"],
+                 dirselect=False, size=(400,400), center_x = 250, center_y = 250)            
+        else:
+            rep = os.getcwd()
+            self.fl = FileChooserListView(path = rep, filters = ["*.mesh.ascii"],
+                 dirselect=False, size=(400,400), center_x = 250, center_y = 250)
+                        
+        '''if platform == 'android':
             rep = "."
         else:
-            rep = "../../Mesh"
-        self.fl = FileChooserListView(path = rep, rootpath = rep, filters = ["*.mesh.ascii"],
-                 dirselect=False, size=(400,400), center_x = 250, center_y = 250)
+            rep = "../../Mesh"'''        
+        
         self.fl.bind(selection=self.on_selected)
         super(Renderer, self).add_widget(self.fl)
     
@@ -74,17 +87,16 @@ class Renderer(Widget):
         #self.scene = ObjFileLoader(resource_find("testnurbs.obj"))
         
         Logger.debug('******************************************************')
-        scale = 3
-        #dir = "Pyro/Pyro Red"
+        scale = 3        
         #dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
         #dir = "Duke Nukem Forever_Kitty Pussoix"
         dir = "Duke_Nukem_by_Ventrue"
         #dir = "DOA5U_Rachel_Nurse/Model" #pb uv
                 
-        if platform == 'android':
+        if not os.path.isdir(meshdir):
             self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
         else:
-            self.scene = MeshAsciiLoader(resource_find("../../Mesh/" + dir + "/Generic_Item.mesh.ascii"), scale)
+            self.scene = MeshAsciiLoader(resource_find(meshdir + dir + "/Generic_Item.mesh.ascii"), scale)
                 
         #scale = .03
         #self.texturename = 'Batman_Rabbit_Head_Posed/Batman_V3_Body_D.PNG'
@@ -186,9 +198,7 @@ class Renderer(Widget):
         PopMatrix()
 
     def draw_elements(self):
-        """ Draw separately all objects on the scene
-            to setup separate rotation for each object
-        """
+        #Draw separately all meshes on the scene
         def _draw_element(m, texture='',texture1=''):
             #bind the texture BEFORE the draw (Mesh) 
             if texture1:                
