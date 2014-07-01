@@ -6,6 +6,9 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.filechooser import FileChooserListView, FileChooserIconView
 
+from kivy.uix.popup import Popup #for error message box
+from kivy.uix.label import Label
+
 import os
 from ftplib import FTP
 import time
@@ -64,7 +67,7 @@ class FTPView(GridLayout):
 
         # Use the adapter in our ListView:
         self.list_view = ListView(adapter=dict_adapter)
-        print "len", len(self.listftp), self.listftp
+        #print "len", len(self.listftp), self.listftp
        
         #self.list_view = ListView(item_strings = self.listftp)
        
@@ -84,90 +87,97 @@ class FTPView(GridLayout):
         #self.add_widget(self.buttonCancel)
         
     def ScanFTP(self):
-        self.listftp = []
-        #set the title
-        self.listftp.append(["LOCAL", " ", "FTP", " "])
-        
-        #read the user and password in a file
-        fileaccount = open("ftp", "r")
-        user = fileaccount.readline()
-        mdp = fileaccount.readline()
-        fileaccount.close()
+        try:
+            self.listftp = []
+            #set the title
+            self.listftp.append(["LOCAL", " ", "FTP", " "])
+            
+            #read the user and password in a file
+            fileaccount = open("ftp", "r")
+            user = fileaccount.readline()
+            mdp = fileaccount.readline()
+            fileaccount.close()
 
-        ftp = FTP("ftpperso.free.fr", user, mdp)
+            ftp = FTP("ftpperso.free.fr", user, mdp)
 
-        ftp.cwd(self.remotePath)
+            ftp.cwd(self.remotePath)
 
-        #get remote files list
-        remoteDir = ftp.nlst()
-        print "remote: ", remoteDir
+            #get remote files list
+            remoteDir = ftp.nlst()
+            #print "remote: ", remoteDir
 
-        #get local files list
-        localDir = os.listdir(self.localPath)
-        print " local", localDir
+            #get local files list
+            localDir = os.listdir(self.localPath)
+            #print " local", localDir
 
-        print
+            print
 
-        #check local files in remote
-        for localFile in localDir:
-            localTime = os.path.getmtime(os.path.join(self.localPath, localFile))
-            #localTime = datetime.utcfromtimestamp(localTime) #syncback seems to work in utc #fix utc method 1
-            localTime = datetime.fromtimestamp(localTime) #fix utc method 2
-                
-            try:
-                remoteIndex = remoteDir.index(localFile)
-            except:
-                remoteIndex = -1
-
-            if remoteIndex != -1:
-                #print localFile, "is present on remote"
-                
-                #get ftp file time
-                remoteTime = ftp.sendcmd('MDTM ' + remoteDir[remoteIndex])
-                #print remoteTime
-                remoteTime = datetime.strptime(remoteTime[4:], "%Y%m%d%H%M%S") #fix utc method 1 : nothing    
-                remoteTime = remoteTime + (datetime.now() - datetime.utcnow()) #fix utc method 2            
-                
-                #check time diff
-                if abs((localTime - remoteTime).total_seconds()) < 10: #delta 10 seconds
-                #if localTime == remoteTime:
-                    #check size diff to test if copy was interrupted : "!!" if error in copy, "=" if size are same too 
-                    #get distant file size
-                    remoteSize = ftp.sendcmd('SIZE ' + remoteDir[remoteIndex])
-                    print "remote size :", int(remoteSize[4:])
+            #check local files in remote
+            for localFile in localDir:
+                localTime = os.path.getmtime(os.path.join(self.localPath, localFile))
+                #localTime = datetime.utcfromtimestamp(localTime) #syncback seems to work in utc #fix utc method 1
+                localTime = datetime.fromtimestamp(localTime) #fix utc method 2
                     
-                    localSize = os.path.getsize(os.path.join(self.localPath, localFile))
-                    print "local size :", localSize
-                                        
-                    print "local ", localFile, " is same than remote :", localTime, remoteTime #nothing to do
-                    if int(remoteSize[4:]) != localSize:
-                        self.listftp.append([str(localTime)[:19], "!!", str(remoteTime)[:19], localFile])                    
-                    else:
-                        self.listftp.append([str(localTime)[:19], "=", str(remoteTime)[:19], localFile])
-                elif localTime > remoteTime:
-                    print "local ", localFile, " is newer than remote :", localTime, remoteTime, localTime - remoteTime # must upload local then touch local file to synchronize time
-                    self.listftp.append([str(localTime)[:19], ">", str(remoteTime)[:19], localFile])
-                else:
-                    print "local ", localFile, " is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
-                    self.listftp.append([str(localTime)[:19], "<", str(remoteTime)[:19], localFile])
-            else:
-                print localFile, " is not present on remote" #must upload local
-                self.listftp.append([str(localTime)[:19], "", "", localFile])
-
-
-        #check if new remote files must be downloaded (not present at all in local)
-        for remoteFile in remoteDir:
-            #skip . and ..
-            if remoteFile != '.' and remoteFile != '..':
                 try:
-                    remoteIndex = localDir.index(remoteFile)
+                    remoteIndex = remoteDir.index(localFile)
                 except:
-                    #error file not found me be downloaded 
-                    print remoteFile, " is only present on remote"
-                    self.listftp.append(["", "", str(remoteTime)[:19], remoteFile])
+                    remoteIndex = -1
 
-        #close the connection
-        ftp.quit()
+                if remoteIndex != -1:
+                    #print localFile, "is present on remote"
+                    
+                    #get ftp file time
+                    remoteTime = ftp.sendcmd('MDTM ' + remoteDir[remoteIndex])
+                    #print remoteTime
+                    remoteTime = datetime.strptime(remoteTime[4:], "%Y%m%d%H%M%S") #fix utc method 1 : nothing    
+                    remoteTime = remoteTime + (datetime.now() - datetime.utcnow()) #fix utc method 2            
+                    
+                    #check time diff
+                    if abs((localTime - remoteTime).total_seconds()) < 10: #delta 10 seconds
+                    #if localTime == remoteTime:
+                        #check size diff to test if copy was interrupted : "!!" if error in copy, "=" if size are same too 
+                        #get distant file size
+                        remoteSize = ftp.sendcmd('SIZE ' + remoteDir[remoteIndex])
+                        #print "remote size :", int(remoteSize[4:])
+                        
+                        localSize = os.path.getsize(os.path.join(self.localPath, localFile))
+                        #print "local size :", localSize
+                                            
+                        #print "local ", localFile, " is same than remote :", localTime, remoteTime #nothing to do
+                        if int(remoteSize[4:]) != localSize:
+                            self.listftp.append([str(localTime)[:19], "!!", str(remoteTime)[:19], localFile])                    
+                        else:
+                            self.listftp.append([str(localTime)[:19], "=", str(remoteTime)[:19], localFile])
+                    elif localTime > remoteTime:
+                        #print "local ", localFile, " is newer than remote :", localTime, remoteTime, localTime - remoteTime # must upload local then touch local file to synchronize time
+                        self.listftp.append([str(localTime)[:19], ">", str(remoteTime)[:19], localFile])
+                    else:
+                        #print "local ", localFile, " is older than remote :", localTime, remoteTime #must download remote then try to set local time with remote time 
+                        self.listftp.append([str(localTime)[:19], "<", str(remoteTime)[:19], localFile])
+                else:
+                    #print localFile, " is not present on remote" #must upload local
+                    self.listftp.append([str(localTime)[:19], "", "", localFile])
+
+
+            #check if new remote files must be downloaded (not present at all in local)
+            for remoteFile in remoteDir:
+                #skip . and ..
+                if remoteFile != '.' and remoteFile != '..':
+                    try:
+                        remoteIndex = localDir.index(remoteFile)
+                    except:
+                        #error file not found me be downloaded 
+                        print remoteFile, " is only present on remote"
+                        self.listftp.append(["", "", str(remoteTime)[:19], remoteFile])
+
+            #close the connection
+            ftp.quit()
+        except Exception as e:
+            #show modal message box if error
+            content = Button(text=str(e))
+            popup = Popup(title='Scanning error', content=content, size_hint=(1, 1))
+            content.bind(on_press=popup.dismiss)
+            popup.open()            
         
     def Load(self, *l):
         print "Load"
