@@ -421,12 +421,18 @@ class Application(Frame):
             self.portrait_M.x = self.portrait_L.x
             self.portrait_M.y = self.portrait_L.y
             self.portrait_M.current_scale = self.portrait_L.current_scale*IMAGE_L_HEIGHT/IMAGE_M_HEIGHT #1.24
+            #set the angle and apply the rotation
+            self.portrait_M.angle = self.portrait_L.angle
+            self.portrait_M.source_image = self.source_image.rotate(self.portrait_M.angle/12, Image.BICUBIC, True)
             self.portrait_M.clipCenter()
             self.portrait_M.scaleCropImage()
             self.portrait_M.displayImage()
             self.portrait_S.x = self.portrait_L.x
             self.portrait_S.y = self.portrait_L.y
             self.portrait_S.current_scale = self.portrait_L.current_scale*IMAGE_L_HEIGHT/IMAGE_S_HEIGHT #3.93
+            #set the angle and apply the rotation
+            self.portrait_S.angle = self.portrait_L.angle            
+            self.portrait_S.source_image = self.source_image.rotate(self.portrait_S.angle/12, Image.BICUBIC, True)
             self.portrait_S.clipCenter()
             self.portrait_S.scaleCropImage()
             self.portrait_S.displayImage()
