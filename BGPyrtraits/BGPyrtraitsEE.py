@@ -267,11 +267,11 @@ class Portrait(Frame):
     def clipCenter(self):
         minx = self.width*self.current_scale/2
         maxx = self.source_image.size[0] - self.width*self.current_scale/2
-        self.x = minx if self.x < minx else maxx if self.x > maxx else self.x
+        #self.x = minx if self.x < minx else maxx if self.x > maxx else self.x
         
         miny = self.height*self.current_scale/2
         maxy = self.source_image.size[1] - self.height*self.current_scale/2
-        self.y = miny if self.y < miny else maxy if self.y > maxy else self.y
+        #self.y = miny if self.y < miny else maxy if self.y > maxy else self.y        
         
     "Scroll occurs"
     def change_scale(self, event):
@@ -289,7 +289,8 @@ class Portrait(Frame):
         
     def setImage(self, image):
         self.source_image = image.convert("RGB") # For png files with transparency
-        self.max_scale = min([image.size[0]/self.width, image.size[1]/self.height])
+        #self.max_scale = min([image.size[0]/self.width, image.size[1]/self.height])
+        self.max_scale = max([image.size[0]/self.width, image.size[1]/self.height])
         
         #Initial setup
         self.current_scale = self.max_scale
@@ -447,7 +448,8 @@ class Application(Frame):
             self.portrait_S.setImage(self.portrait_L.im)
         
     def openfile(self):
-        self.source_image_filepath = tkinter.filedialog.askopenfilename()
+        self.source_image_filepath = tkinter.filedialog.askopenfilename(filetypes = (("Images", "*.jpg;*.jpeg;*.gif;*.png")
+                                                         ,("All files", "*.*") ))
         if self.source_image_filepath:
             try:
                 self.source_image = Image.open(self.source_image_filepath)
