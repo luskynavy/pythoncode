@@ -519,7 +519,7 @@ def format_save_filepath(filepath, increment=False):
             if path.isfile(s_name):
                 filename = filename.replace(" ", "")[0:6]
                 i = 0
-                while path.isfile(s_name) and i < 99:
+                while path.isfile(s_name) and i < 999:
                     s_name = path.join(folder, filename + str(i) + "S.bmp")
                     i+= 1
                 filename = filename.replace(" ", "")[0:6] + str(i - 1)
