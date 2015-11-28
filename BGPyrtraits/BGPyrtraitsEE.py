@@ -511,6 +511,7 @@ class Application(Frame):
 def format_save_filepath(filepath, increment=False):
         folder, filename = path.split(filepath)
         filename = filename.replace(" ", "")[0:7]
+        filename = filename.replace(".", "")
 
         s_name = path.join(folder, filename + "S.bmp")
         
