@@ -200,7 +200,9 @@ class Portrait(Frame):
         self.im = None
         self.source_image = None
         self.imtk = None
-        
+                
+        self.shift_on = False
+
     def clearImage(self):
         self.im = None
         self.source_image = None
@@ -220,6 +222,9 @@ class Portrait(Frame):
         #rotate
         self.view.bind("<B3-Motion>", self.change_angle)
         self.view.bind("<Button-3>", self.save_angle)
+        #shift for more precision
+        self.view.bind("<KeyPress-Shift_L>", self.shift_pressed)
+        self.view.bind("<KeyRelease-Shift_L>", self.shift_released)
         
     def unsetBinds(self):
         self.view.unbind("<B1-Motion>")
@@ -232,6 +237,14 @@ class Portrait(Frame):
         #rotate
         self.view.unbind("<B3-Motion>")
         self.view.unbind("<Button-3>")
+
+    "shift pressed"
+    def shift_pressed(self, event):
+        self.shift_on = True
+        
+    "shift released"
+    def shift_released(self, event):
+        self.shift_on = False
         
     "Relative angle for dragging"
     def save_angle(self, event):
@@ -239,7 +252,11 @@ class Portrait(Frame):
         
     "Angle Drag occurs"
     def change_angle(self, event):
-        self.angle = self.angle + (self.relAngle - event.y)
+        if self.shift_on: #more precise with shift
+            self.angle = self.angle + ((self.relAngle - event.y) / 2)
+        else:
+            self.angle = self.angle + (self.relAngle - event.y)
+
         self.source_image = self.app.source_image.rotate(self.angle/12, Image.BICUBIC, True)
         self.scaleCropImage()
         self.displayImage()
@@ -253,8 +270,14 @@ class Portrait(Frame):
         
     "Drag occurs"
     def change_position(self, event):
-        self.x = self.x + (self.relx - event.x)*self.current_scale
-        self.y = self.y + (self.rely - event.y)*self.current_scale
+        if self.shift_on: #more precise with shift
+            self.x = self.x + ((self.relx - event.x) / 2)*self.current_scale
+        else:
+            self.x = self.x + (self.relx - event.x)*self.current_scale
+        if self.shift_on: #more precise with shift
+            self.y = self.y + ((self.rely - event.y) / 2)*self.current_scale
+        else:
+            self.y = self.y + (self.rely - event.y)*self.current_scale
         self.clipCenter()
         self.relx, self.rely = event.x, event.y
         self.scaleCropImage()
@@ -276,9 +299,16 @@ class Portrait(Frame):
     "Scroll occurs"
     def change_scale(self, event):
         if event.num == 5 or event.delta == -120:
-            self.current_scale *= 1.05 #1.1
+            if self.shift_on:
+                self.current_scale *= 1.025 #1.1 #more precise with shift
+            else:
+                self.current_scale *= 1.05 #1.1
         if event.num == 4 or event.delta == 120:
-            self.current_scale *= 0.95 #0.9
+            if self.shift_on:
+                self.current_scale *= 0.975 #0.9  #more precise with shift
+            else:
+                self.current_scale *= 0.95 #0.9
+                
         self.current_scale = min([self.current_scale, self.max_scale])
         self.clipCenter()
         self.scaleCropImage()
