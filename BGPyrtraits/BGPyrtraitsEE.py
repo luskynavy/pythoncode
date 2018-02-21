@@ -35,6 +35,11 @@ IMAGE_L_HEIGHT_OLD = 170
 IMAGE_S_WIDTH_OLD = 38
 IMAGE_S_HEIGHT_OLD = 60
 
+EXPORT_FORMAT = "bmp"
+
+M_SUFFIX = "M."
+S_SUFFIX = "S."
+
 class BatchWin(Toplevel):
     """Window for batch processing. The user choose an input folder and
     an output folder, then any pictures located in input folder and all
@@ -143,9 +148,9 @@ class BatchWin(Toplevel):
             """Loading the picture into the frames, auto resize apply"""
             for i in range(0,3):
                 self.portraits[i].setImage(im)
-            self.portraits[0].im.save(path.join(self.outputdir, basename + "L.bmp"))
-            self.portraits[1].im.save(path.join(self.outputdir, basename + "M.bmp"))
-            self.portraits[2].im.save(path.join(self.outputdir, basename + "S.bmp"))
+            self.portraits[0].im.save(path.join(self.outputdir, basename + M_SUFFIX + EXPORT_FORMAT))
+            self.portraits[1].im.save(path.join(self.outputdir, basename + M_SUFFIX + EXPORT_FORMAT))
+            self.portraits[2].im.save(path.join(self.outputdir, basename + S_SUFFIX + EXPORT_FORMAT))
                 
             self.completed_file_num += 1
             text = "Processing : " + str(self.completed_file_num) + "/" + str(self.image_file_num)
@@ -256,6 +261,7 @@ class Portrait(Frame):
             self.angle = self.angle + ((self.relAngle - event.y) / 2)
         else:
             self.angle = self.angle + (self.relAngle - event.y)
+
         self.source_image = self.app.source_image.rotate(self.angle/12, Image.BICUBIC, True)
         self.scaleCropImage()
         self.displayImage()
@@ -512,13 +518,13 @@ class Application(Frame):
             
         self.master.title(ntpath.split(self.source_image_filepath)[1] + " " + ntpath.split(self.filename_saved[0])[1])
             
-        #self.portrait_L.im.save(filesnames[0], "BMP")
-        self.portrait_M.im.save(filesnames[1], "BMP")
+        #self.portrait_L.im.save(filesnames[0], EXPORT_FORMAT)
+        self.portrait_M.im.save(filesnames[1], EXPORT_FORMAT)
         #imgM = self.portrait_L.im.resize((IMAGE_M_WIDTH, IMAGE_M_HEIGHT), Image.ANTIALIAS)
-        #imgM.save(filesnames[1], "BMP")
-        self.portrait_S.im.save(filesnames[2], "BMP")
+        #imgM.save(filesnames[1], EXPORT_FORMAT)
+        self.portrait_S.im.save(filesnames[2], EXPORT_FORMAT)
         #imgS = self.portrait_L.im.resize((IMAGE_S_WIDTH, IMAGE_S_HEIGHT), Image.ANTIALIAS)
-        #imgS.save(filesnames[2], "BMP")
+        #imgS.save(filesnames[2], EXPORT_FORMAT)
         
         #keep saved filename 
         self.not_saved = False
@@ -527,9 +533,9 @@ class Application(Frame):
         requestedfilesnames = tkinter.filedialog.asksaveasfilename()
         if requestedfilesnames:
             filesnames = format_save_filepath(requestedfilesnames)
-            #self.portrait_L.im.save(filesnames[0], "BMP")
-            self.portrait_M.im.save(filesnames[1], "BMP")
-            self.portrait_S.im.save(filesnames[2], "BMP")
+            #self.portrait_L.im.save(filesnames[0], EXPORT_FORMAT)
+            self.portrait_M.im.save(filesnames[1], EXPORT_FORMAT)
+            self.portrait_S.im.save(filesnames[2], EXPORT_FORMAT)
             
     def openfolder(self):
         portraits = [self.portrait_L, self.portrait_M, self.portrait_S]
@@ -542,7 +548,7 @@ def format_save_filepath(filepath, increment=False):
         filename = filename.replace(" ", "")[0:7]
         filename = filename.replace(".", "")
 
-        s_name = path.join(folder, filename + "S.bmp")
+        s_name = path.join(folder, filename + S_SUFFIX + EXPORT_FORMAT)
         
         #increment filename number if needed
         if increment:            
@@ -550,13 +556,13 @@ def format_save_filepath(filepath, increment=False):
                 filename = filename.replace(" ", "")[0:6]
                 i = 0
                 while path.isfile(s_name) and i < 999:
-                    s_name = path.join(folder, filename + str(i) + "S.bmp")
+                    s_name = path.join(folder, filename + str(i) + S_SUFFIX + EXPORT_FORMAT)
                     i+= 1
                 filename = filename.replace(" ", "")[0:6] + str(i - 1)
         
-        l_name = path.join(folder, filename + "L.bmp")
-        m_name = path.join(folder, filename + "M.bmp")
-        #s_name = path.join(folder, filename + "S.bmp")
+        l_name = path.join(folder, filename + M_SUFFIX + EXPORT_FORMAT)
+        m_name = path.join(folder, filename + M_SUFFIX + EXPORT_FORMAT)
+        #s_name = path.join(folder, filename + S_SUFFIX + EXPORT_FORMAT)
         return [l_name, m_name, s_name]
         
 def format_base_filename(filepath):
@@ -578,8 +584,8 @@ def cmdbatch(width, height, suffixe, folderinpath, folderoutpath):
             try:
                 image = Image.open(path.join(root,file))
                 portrait.setImage(image)
-                filename = file[0:7] + suffixe + ".BMP"
-                portrait.im.save(path.join(folderoutpath,filename), "BMP")
+                filename = file[0:7] + suffixe + "." + EXPORT_FORMAT
+                portrait.im.save(path.join(folderoutpath,filename), EXPORT_FORMAT)
                 print("Done !")
             except:
                 print("Not a picture ?")
@@ -590,8 +596,8 @@ def cmdfile(width, height, suffixe, inputfile, folderoutpath):
     try:
         image = Image.open(inputfile)
         portrait.setImage(image)
-        filename = path.basename(inputfile)[0:7] + suffixe + ".BMP"
-        portrait.im.save(path.join(folderoutpath,filename), "BMP")
+        filename = path.basename(inputfile)[0:7] + suffixe + "." + EXPORT_FORMAT
+        portrait.im.save(path.join(folderoutpath,filename), EXPORT_FORMAT)
         print("Done !")
     except:
         print("Error occured !")
