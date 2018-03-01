@@ -40,6 +40,8 @@ EXPORT_FORMAT = "bmp"
 M_SUFFIX = "M."
 S_SUFFIX = "S."
 
+OVERLAY_IMG = "/overlayEE.png"
+
 class BatchWin(Toplevel):
     """Window for batch processing. The user choose an input folder and
     an output folder, then any pictures located in input folder and all
@@ -64,7 +66,7 @@ class BatchWin(Toplevel):
         self.filepaths = []
         self.total_file_num = 0
         self.image_file_num = 0
-        self.completed_file_num = 0
+        self.completed_file_num = 0        
         
         self.title("Batch processing")
         self.resizable(0,0)
@@ -207,6 +209,10 @@ class Portrait(Frame):
         self.imtk = None
         
         self.shift_on = False
+        
+        #load overlay image in same directory as python file
+        self.overlayim = Image.open(path.dirname(path.abspath(__file__)) + OVERLAY_IMG)
+        self.overlay_on = False
         
     def clearImage(self):
         self.im = None
@@ -352,9 +358,16 @@ class Portrait(Frame):
         
     "Display image in the tkinter frame"
     def displayImage(self):
-        self.imtk = ImageTk.PhotoImage(self.im)
+        #only display overlay if on
+        if not self.overlay_on:
+            self.imtk = ImageTk.PhotoImage(self.im)            
+        else:
+            #copy image and paste overlay in with itself as mask
+            im = self.im.copy()
+            im.paste(self.overlayim, (0, 0), self.overlayim)
+            self.imtk = ImageTk.PhotoImage(im)
+            
         self.view.config(image=self.imtk)
-        
 
 class Application(Frame):
     """Main application frame"""
@@ -362,6 +375,7 @@ class Application(Frame):
         super().__init__(master)
         
         self.source_image = None
+        self.overlayOn = IntVar() #var for overlay checkbox
         
         self.source_image_filepath = ""
         self.connect = True
@@ -416,11 +430,13 @@ class Application(Frame):
         savebutton = Button(toolbar, text="Save", command=self.save)
         saveasbutton = Button(toolbar, text="Save As", command=self.saveas)
         connectbutton = Button(toolbar, text="Disconnect", command= lambda: self.connectPressed(connectbutton))
+        overlaycheckbox = Checkbutton(toolbar, text="Overlay", command=self.overlay, variable=self.overlayOn)    
         openbutton.pack(side=LEFT)
         openfolder.pack(side=LEFT)
         savebutton.pack(side=LEFT)
         saveasbutton.pack(side=LEFT)
         connectbutton.pack(side=LEFT)
+        overlaycheckbox.pack(side=LEFT)
         toolbar.pack(fill=X)
         
     def create_labelframes(self, master=None):
@@ -437,7 +453,7 @@ class Application(Frame):
         self.portrait_M.place(anchor=CENTER, relx=0.5, rely=0.5)
         
         self.portrait_S = Portrait(master=self.frame_S, height=IMAGE_S_HEIGHT, width=IMAGE_S_WIDTH, app=self)
-        self.portrait_S.place(anchor=CENTER, relx=0.5, rely=0.5)
+        self.portrait_S.place(anchor=CENTER, relx=0.5, rely=0.5)        
         
         self.frame_L.pack(side=LEFT, fill=Y, padx=10, pady=10)
         self.frame_M.pack(side=LEFT, fill=Y, padx=10, pady=10)
@@ -537,6 +553,11 @@ class Application(Frame):
             self.portrait_M.im.save(filesnames[1], EXPORT_FORMAT)
             self.portrait_S.im.save(filesnames[2], EXPORT_FORMAT)
             
+    def overlay(self):
+        self.portrait_S.overlay_on = self.overlayOn.get() == 1
+        self.portrait_S.displayImage()
+        return
+    
     def openfolder(self):
         portraits = [self.portrait_L, self.portrait_M, self.portrait_S]
         self.batchwindow = BatchWin(self.master, portraits, self.guieventqueue)
