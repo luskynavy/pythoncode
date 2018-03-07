@@ -248,6 +248,9 @@ class Portrait(Frame):
         #rotate
         self.view.unbind("<B3-Motion>")
         self.view.unbind("<Button-3>")
+        #shift for more precision
+        self.view.unbind("<KeyPress-Shift_L>", self.shift_pressed)
+        self.view.unbind("<KeyRelease-Shift_L>", self.shift_released)
     
     "shift pressed"
     def shift_pressed(self, event):
