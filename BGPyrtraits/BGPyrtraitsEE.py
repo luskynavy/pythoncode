@@ -18,29 +18,30 @@ from tkinter.ttk import *
 import tkinter.filedialog
 import tkinter.messagebox
 
+from PIL import Image, ImageTk
+
 # BG     : M 110*170 S 38*60
 # BG  EE : M 210*330 S 38*60
 # IWD EE : L 20x660 M 169*266 S 38*60
 # POE EE : L 420x660 M 169*266 S 38*60 (210x330 76*96 ?)
             
-IMAGE_L_WIDTH = 220 #210
-IMAGE_L_HEIGHT = 340 #330
-IMAGE_M_WIDTH = 210 #169
-IMAGE_M_HEIGHT = 330 #266
-IMAGE_S_WIDTH = 85 #54
-IMAGE_S_HEIGHT = 133 #84
 
-IMAGE_L_WIDTH_OLD = 110
-IMAGE_L_HEIGHT_OLD = 170
-IMAGE_S_WIDTH_OLD = 38
-IMAGE_S_HEIGHT_OLD = 60
-
-EXPORT_FORMAT = "bmp"
-
-M_SUFFIX = "M."
-S_SUFFIX = "S."
-
-OVERLAY_IMG = "/overlayEE.png"
+class Config():
+    """Configuration, default values for BG EE."""
+    IMAGE_L_WIDTH = 220 #210
+    IMAGE_L_HEIGHT = 340 #330
+    IMAGE_M_WIDTH = 210 #169
+    IMAGE_M_HEIGHT = 330 #266
+    IMAGE_S_WIDTH = 85 #54
+    IMAGE_S_HEIGHT = 133 #84
+    
+    EXPORT_FORMAT = "bmp"
+    
+    M_SUFFIX = "M."
+    S_SUFFIX = "S."
+    
+    OVERLAY_IMG = "/overlayEE.png"
+   
 
 class BatchWin(Toplevel):
     """Window for batch processing. The user choose an input folder and
@@ -48,8 +49,9 @@ class BatchWin(Toplevel):
     of its subfolders are directly resized to BG:EE pictures sizes.
     Names are automaticaly formatted, and duplicated names are taken
     care of."""
-    def __init__(self, master=None, portraits=None, queue=None):
+    def __init__(self, config, master=None, portraits=None, queue=None):
         super().__init__(master)
+        self.config = config
         self.portraits = portraits #Reference to portraits frames, to resize and save pictures
         self.queue = queue #To update the progress label
 
@@ -150,9 +152,9 @@ class BatchWin(Toplevel):
             """Loading the picture into the frames, auto resize apply"""
             for i in range(0,3):
                 self.portraits[i].setImage(im)
-            self.portraits[0].im.save(path.join(self.outputdir, basename + M_SUFFIX + EXPORT_FORMAT))
-            self.portraits[1].im.save(path.join(self.outputdir, basename + M_SUFFIX + EXPORT_FORMAT))
-            self.portraits[2].im.save(path.join(self.outputdir, basename + S_SUFFIX + EXPORT_FORMAT))
+            self.portraits[0].im.save(path.join(self.outputdir, basename + self.config.M_SUFFIX + self.config.EXPORT_FORMAT))
+            self.portraits[1].im.save(path.join(self.outputdir, basename + self.config.M_SUFFIX + self.config.EXPORT_FORMAT))
+            self.portraits[2].im.save(path.join(self.outputdir, basename + self.config.S_SUFFIX + self.config.EXPORT_FORMAT))
                 
             self.completed_file_num += 1
             text = "Processing : " + str(self.completed_file_num) + "/" + str(self.image_file_num)
@@ -211,7 +213,7 @@ class Portrait(Frame):
         self.shift_on = False
         
         #load overlay image in same directory as python file
-        self.overlayim = Image.open(path.dirname(path.abspath(__file__)) + OVERLAY_IMG)
+        self.overlayim = Image.open(path.dirname(path.abspath(__file__)) + self.app.config.OVERLAY_IMG)
         self.overlay_on = False
         
     def clearImage(self):
@@ -354,10 +356,10 @@ class Portrait(Frame):
         temp = self.source_image.crop((int(x0), int(y0), int(x1), int(y1)))        
         self.im = temp.resize((self.width, self.height), Image.ANTIALIAS)        
         if self.app.connect:
-            if self.width == IMAGE_M_WIDTH:
-                self.im = self.app.portrait_L.im.resize((IMAGE_M_WIDTH, IMAGE_M_HEIGHT), Image.ANTIALIAS)
-            if self.width == IMAGE_S_WIDTH:
-                self.im = self.app.portrait_L.im.resize((IMAGE_S_WIDTH, IMAGE_S_HEIGHT), Image.ANTIALIAS)
+            if self.width == self.app.config.IMAGE_M_WIDTH:
+                self.im = self.app.portrait_L.im.resize((self.app.config.IMAGE_M_WIDTH, self.app.config.IMAGE_M_HEIGHT), Image.ANTIALIAS)
+            if self.width == self.app.config.IMAGE_S_WIDTH:
+                self.im = self.app.portrait_L.im.resize((self.app.config.IMAGE_S_WIDTH, self.app.config.IMAGE_S_HEIGHT), Image.ANTIALIAS)
         
     "Display image in the tkinter frame"
     def displayImage(self):
@@ -374,8 +376,10 @@ class Portrait(Frame):
 
 class Application(Frame):
     """Main application frame"""
-    def __init__(self, master=None):
+    def __init__(self, config, master=None):
         super().__init__(master)
+        
+        self.config = config
         
         self.source_image = None
         self.overlayOn = IntVar() #var for overlay checkbox
@@ -444,18 +448,18 @@ class Application(Frame):
         
     def create_labelframes(self, master=None):
         
-        self.frame_L = LabelFrame(master, text= str(IMAGE_L_WIDTH) + "x" + str(IMAGE_L_HEIGHT), height=360, width=230, labelanchor=N)
-        self.frame_M = LabelFrame(master, text= str(IMAGE_M_WIDTH) + "x" + str(IMAGE_M_HEIGHT) + " (locked)", height=360, width=230, labelanchor=N)
-        self.frame_S = LabelFrame(master, text= str(IMAGE_S_WIDTH) + "x" + str(IMAGE_S_HEIGHT) + " (locked)", height=360, width=230, labelanchor=N)
+        self.frame_L = LabelFrame(master, text= str(self.config.IMAGE_L_WIDTH) + "x" + str(self.config.IMAGE_L_HEIGHT), height=360, width=230, labelanchor=N)
+        self.frame_M = LabelFrame(master, text= str(self.config.IMAGE_M_WIDTH) + "x" + str(self.config.IMAGE_M_HEIGHT) + " (locked)", height=360, width=230, labelanchor=N)
+        self.frame_S = LabelFrame(master, text= str(self.config.IMAGE_S_WIDTH) + "x" + str(self.config.IMAGE_S_HEIGHT) + " (locked)", height=360, width=230, labelanchor=N)
         
-        self.portrait_L = Portrait(master=self.frame_L, height=IMAGE_L_HEIGHT, width=IMAGE_L_WIDTH, app=self)
+        self.portrait_L = Portrait(master=self.frame_L, height=self.config.IMAGE_L_HEIGHT, width=self.config.IMAGE_L_WIDTH, app=self)
         self.portrait_L.place(anchor=CENTER, relx=0.5, rely=0.5)
         self.portrait_L.setBinds()
         
-        self.portrait_M = Portrait(master=self.frame_M, height=IMAGE_M_HEIGHT, width=IMAGE_M_WIDTH, app=self)
+        self.portrait_M = Portrait(master=self.frame_M, height=self.config.IMAGE_M_HEIGHT, width=self.config.IMAGE_M_WIDTH, app=self)
         self.portrait_M.place(anchor=CENTER, relx=0.5, rely=0.5)
         
-        self.portrait_S = Portrait(master=self.frame_S, height=IMAGE_S_HEIGHT, width=IMAGE_S_WIDTH, app=self)
+        self.portrait_S = Portrait(master=self.frame_S, height=self.config.IMAGE_S_HEIGHT, width=self.config.IMAGE_S_WIDTH, app=self)
         self.portrait_S.place(anchor=CENTER, relx=0.5, rely=0.5)        
         
         self.frame_L.pack(side=LEFT, fill=Y, padx=10, pady=10)
@@ -466,8 +470,8 @@ class Application(Frame):
         if self.connect:
             self.connect = False
             button.configure(text="Connect")
-            self.frame_M.configure(text=str(IMAGE_M_WIDTH) + "x" + str(IMAGE_M_HEIGHT))
-            self.frame_S.configure(text=str(IMAGE_S_WIDTH) + "x" + str(IMAGE_S_HEIGHT))
+            self.frame_M.configure(text=str(self.config.IMAGE_M_WIDTH) + "x" + str(self.config.IMAGE_M_HEIGHT))
+            self.frame_S.configure(text=str(self.config.IMAGE_S_WIDTH) + "x" + str(self.config.IMAGE_S_HEIGHT))
             self.portrait_M.setBinds()
             self.portrait_S.setBinds()
             self.portrait_M.setImage(self.source_image)
@@ -475,7 +479,7 @@ class Application(Frame):
             
             self.portrait_M.x = self.portrait_L.x
             self.portrait_M.y = self.portrait_L.y
-            self.portrait_M.current_scale = self.portrait_L.current_scale*IMAGE_L_HEIGHT/IMAGE_M_HEIGHT #1.24
+            self.portrait_M.current_scale = self.portrait_L.current_scale*self.config.IMAGE_L_HEIGHT/self.config.IMAGE_M_HEIGHT #1.24
             #set the angle and apply the rotation
             self.portrait_M.angle = self.portrait_L.angle
             self.portrait_M.source_image = self.source_image.rotate(self.portrait_M.angle/12, Image.BICUBIC, True)
@@ -484,7 +488,7 @@ class Application(Frame):
             self.portrait_M.displayImage()
             self.portrait_S.x = self.portrait_L.x
             self.portrait_S.y = self.portrait_L.y
-            self.portrait_S.current_scale = self.portrait_L.current_scale*IMAGE_L_HEIGHT/IMAGE_S_HEIGHT #3.93
+            self.portrait_S.current_scale = self.portrait_L.current_scale*self.config.IMAGE_L_HEIGHT/self.config.IMAGE_S_HEIGHT #3.93
             #set the angle and apply the rotation
             self.portrait_S.angle = self.portrait_L.angle            
             self.portrait_S.source_image = self.source_image.rotate(self.portrait_S.angle/12, Image.BICUBIC, True)
@@ -494,8 +498,8 @@ class Application(Frame):
         else:
             self.connect = True
             button.configure(text="Disconnect")
-            self.frame_M.configure(text=str(IMAGE_M_WIDTH) + "x" + str(IMAGE_M_HEIGHT) + " (locked)")
-            self.frame_S.configure(text=str(IMAGE_S_WIDTH) + "x" + str(IMAGE_S_HEIGHT) + " (locked)")
+            self.frame_M.configure(text=str(IMAGE_M_WIDTH) + "x" + str(self.config.IMAGE_M_HEIGHT) + " (locked)")
+            self.frame_S.configure(text=str(IMAGE_S_WIDTH) + "x" + str(self.config.IMAGE_S_HEIGHT) + " (locked)")
             self.portrait_M.unsetBinds()
             self.portrait_S.unsetBinds()
             self.portrait_M.setImage(self.portrait_L.im)
@@ -530,20 +534,20 @@ class Application(Frame):
     def save(self):
         #generate and increment new filename only on first save
         if self.not_saved:
-            filesnames = format_save_filepath(self.source_image_filepath, self.not_saved)
+            filesnames = self.format_save_filepath(self.source_image_filepath, self.not_saved)
             self.filename_saved = filesnames
         else:
             filesnames = self.filename_saved
             
         self.master.title(ntpath.split(self.source_image_filepath)[1] + " " + ntpath.split(self.filename_saved[0])[1])
             
-        #self.portrait_L.im.save(filesnames[0], EXPORT_FORMAT)
-        self.portrait_M.im.save(filesnames[1], EXPORT_FORMAT)
-        #imgM = self.portrait_L.im.resize((IMAGE_M_WIDTH, IMAGE_M_HEIGHT), Image.ANTIALIAS)
-        #imgM.save(filesnames[1], EXPORT_FORMAT)
-        self.portrait_S.im.save(filesnames[2], EXPORT_FORMAT)
-        #imgS = self.portrait_L.im.resize((IMAGE_S_WIDTH, IMAGE_S_HEIGHT), Image.ANTIALIAS)
-        #imgS.save(filesnames[2], EXPORT_FORMAT)
+        #self.portrait_L.im.save(filesnames[0], self.config.EXPORT_FORMAT)
+        self.portrait_M.im.save(filesnames[1], self.config.EXPORT_FORMAT)
+        #imgM = self.portrait_L.im.resize((self.config.IMAGE_M_WIDTH, self.config.IMAGE_M_HEIGHT), Image.ANTIALIAS)
+        #imgM.save(filesnames[1], self.config.EXPORT_FORMAT)
+        self.portrait_S.im.save(filesnames[2], self.config.EXPORT_FORMAT)
+        #imgS = self.portrait_L.im.resize((self.config.IMAGE_S_WIDTH, self.config.IMAGE_S_HEIGHT), Image.ANTIALIAS)
+        #imgS.save(filesnames[2], self.config.EXPORT_FORMAT)
         
         #keep saved filename 
         self.not_saved = False
@@ -551,10 +555,10 @@ class Application(Frame):
     def saveas(self):
         requestedfilesnames = tkinter.filedialog.asksaveasfilename()
         if requestedfilesnames:
-            filesnames = format_save_filepath(requestedfilesnames)
-            #self.portrait_L.im.save(filesnames[0], EXPORT_FORMAT)
-            self.portrait_M.im.save(filesnames[1], EXPORT_FORMAT)
-            self.portrait_S.im.save(filesnames[2], EXPORT_FORMAT)
+            filesnames = self.format_save_filepath(requestedfilesnames)
+            #self.portrait_L.im.save(filesnames[0], self.config.EXPORT_FORMAT)
+            self.portrait_M.im.save(filesnames[1], self.config.EXPORT_FORMAT)
+            self.portrait_S.im.save(filesnames[2], self.config.EXPORT_FORMAT)
             
     def overlay(self):
         self.portrait_S.overlay_on = self.overlayOn.get() == 1
@@ -563,16 +567,16 @@ class Application(Frame):
     
     def openfolder(self):
         portraits = [self.portrait_L, self.portrait_M, self.portrait_S]
-        self.batchwindow = BatchWin(self.master, portraits, self.guieventqueue)
+        self.batchwindow = BatchWin(self.config, self.master, portraits, self.guieventqueue)
             
         """Next 2 methods format the names of the output files
         as BG:EE needs a strict name formatting"""
-def format_save_filepath(filepath, increment=False):
+    def format_save_filepath(self, filepath, increment=False):
         folder, filename = path.split(filepath)
         filename = filename.replace(" ", "")[0:7]
         filename = filename.replace(".", "")
 
-        s_name = path.join(folder, filename + S_SUFFIX + EXPORT_FORMAT)
+        s_name = path.join(folder, filename + self.config.S_SUFFIX + self.config.EXPORT_FORMAT)
         
         #increment filename number if needed
         if increment:            
@@ -580,13 +584,13 @@ def format_save_filepath(filepath, increment=False):
                 filename = filename.replace(" ", "")[0:6]
                 i = 0
                 while path.isfile(s_name) and i < 999:
-                    s_name = path.join(folder, filename + str(i) + S_SUFFIX + EXPORT_FORMAT)
+                    s_name = path.join(folder, filename + str(i) + self.config.S_SUFFIX + self.config.EXPORT_FORMAT)
                     i+= 1
                 filename = filename.replace(" ", "")[0:6] + str(i - 1)
         
-        l_name = path.join(folder, filename + M_SUFFIX + EXPORT_FORMAT)
-        m_name = path.join(folder, filename + M_SUFFIX + EXPORT_FORMAT)
-        #s_name = path.join(folder, filename + S_SUFFIX + EXPORT_FORMAT)
+        l_name = path.join(folder, filename + self.config.M_SUFFIX + self.config.EXPORT_FORMAT)
+        m_name = path.join(folder, filename + self.config.M_SUFFIX + self.config.EXPORT_FORMAT)
+        #s_name = path.join(folder, filename + self.config.S_SUFFIX + self.config.EXPORT_FORMAT)
         return [l_name, m_name, s_name]
         
 def format_base_filename(filepath):
@@ -600,7 +604,7 @@ def openDonate():
     
     """Customs cmd line options asked by community members to resize
     at specific size. Nice reuse of the portrait objects (instanciated by Application)"""
-def cmdbatch(width, height, suffixe, folderinpath, folderoutpath):
+def cmdbatch(config, width, height, suffixe, folderinpath, folderoutpath):
     portrait = Portrait(height=int(height), width=int(width), app=None)
     for root, subFolders, files in walk(folderinpath):
         for file in files:
@@ -608,36 +612,36 @@ def cmdbatch(width, height, suffixe, folderinpath, folderoutpath):
             try:
                 image = Image.open(path.join(root,file))
                 portrait.setImage(image)
-                filename = file[0:7] + suffixe + "." + EXPORT_FORMAT
-                portrait.im.save(path.join(folderoutpath,filename), EXPORT_FORMAT)
+                filename = file[0:7] + suffixe + "." + config.EXPORT_FORMAT
+                portrait.im.save(path.join(folderoutpath,filename), config.EXPORT_FORMAT)
                 print("Done !")
             except:
                 print("Not a picture ?")
                 
-def cmdfile(width, height, suffixe, inputfile, folderoutpath):
+def cmdfile(config, width, height, suffixe, inputfile, folderoutpath):
     print("Resizing \"{}\" to {}x{} with suffixe \"{}\" to {}".format(path.basename(inputfile),width,height,suffixe,folderoutpath), end=" - ")
     portrait = Portrait(height=int(height), width=int(width), app=None)
     try:
         image = Image.open(inputfile)
         portrait.setImage(image)
-        filename = path.basename(inputfile)[0:7] + suffixe + "." + EXPORT_FORMAT
-        portrait.im.save(path.join(folderoutpath,filename), EXPORT_FORMAT)
+        filename = path.basename(inputfile)[0:7] + suffixe + "." + config.EXPORT_FORMAT
+        portrait.im.save(path.join(folderoutpath,filename), config.EXPORT_FORMAT)
         print("Done !")
     except:
         print("Error occured !")
         
 if __name__ == "__main__" :
-    from PIL import Image, ImageTk
+    config = Config()
     if len(sys.argv) == 1:
         root = Tk()
         root.resizable(0,0)
-        root.title("BGPyrtraits")
-        Application(master=root).mainloop()
+        root.title("BGPyrtraits")        
+        Application(config, master=root).mainloop()
     elif len(sys.argv) == 6:
         # Args: width height suffixe inputfolder outputfolder
         if path.isdir(sys.argv[4]):
-            cmdbatch(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+            cmdbatch(config, sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
         elif path.isfile(sys.argv[4]):
-            cmdfile(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+            cmdfile(config, sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     else:
         print("Wrong number of arguments (0 for gui, 5 for cmd batch processing)")
