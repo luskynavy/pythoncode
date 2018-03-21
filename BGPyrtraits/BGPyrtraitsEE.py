@@ -7,8 +7,8 @@ from os import path, walk
 import webbrowser
 import threading
 import queue
-import sys
-import time
+#import sys
+#import time
 
 import ntpath
 import traceback
@@ -304,12 +304,13 @@ class Portrait(Frame):
         
     "The picture can't go outside the frame"
     def clipCenter(self):
-        minx = self.width*self.current_scale/2
-        maxx = self.source_image.size[0] - self.width*self.current_scale/2
+        """"""
+        #minx = self.width*self.current_scale/2
+        #maxx = self.source_image.size[0] - self.width*self.current_scale/2
         #self.x = minx if self.x < minx else maxx if self.x > maxx else self.x
         
-        miny = self.height*self.current_scale/2
-        maxy = self.source_image.size[1] - self.height*self.current_scale/2
+        #miny = self.height*self.current_scale/2
+        #maxy = self.source_image.size[1] - self.height*self.current_scale/2
         #self.y = miny if self.y < miny else maxy if self.y > maxy else self.y        
         
     "Scroll occurs"
@@ -498,8 +499,8 @@ class Application(Frame):
         else:
             self.connect = True
             button.configure(text="Disconnect")
-            self.frame_M.configure(text=str(IMAGE_M_WIDTH) + "x" + str(self.config.IMAGE_M_HEIGHT) + " (locked)")
-            self.frame_S.configure(text=str(IMAGE_S_WIDTH) + "x" + str(self.config.IMAGE_S_HEIGHT) + " (locked)")
+            self.frame_M.configure(text=str(self.config.IMAGE_M_WIDTH) + "x" + str(self.config.IMAGE_M_HEIGHT) + " (locked)")
+            self.frame_S.configure(text=str(self.config.IMAGE_S_WIDTH) + "x" + str(self.config.IMAGE_S_HEIGHT) + " (locked)")
             self.portrait_M.unsetBinds()
             self.portrait_S.unsetBinds()
             self.portrait_M.setImage(self.portrait_L.im)

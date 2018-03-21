@@ -3,22 +3,22 @@
 # BGPyrtrait is a small program that crop and resize pictures to be used
 # in Baldur's Gate : Enhanced Edition.
 
-from os import path, walk
-import webbrowser
-import threading
-import queue
-import sys
-import time
+#from os import path, walk
+#import webbrowser
+#import threading
+#import queue
+#import sys
+#import time
 
-import ntpath
-import traceback
+#import ntpath
+#import traceback
 
 from tkinter import *
 from tkinter.ttk import *
-import tkinter.filedialog
-import tkinter.messagebox
+#import tkinter.filedialog
+#import tkinter.messagebox
 
-from PIL import Image, ImageTk
+#from PIL import Image, ImageTk
 
 from BGPyrtraitsEE import *
 
