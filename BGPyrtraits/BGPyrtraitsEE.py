@@ -447,12 +447,14 @@ class Application(Frame):
         savebutton = Button(toolbar, text="Save", command=self.save)
         saveasbutton = Button(toolbar, text="Save As", command=self.saveas)
         connectbutton = Button(toolbar, text="Disconnect", command= lambda: self.connectPressed(connectbutton))
+        flipbutton = Button(toolbar, text="Flip", command= lambda: self.flipPressed(flipbutton))
         overlaycheckbox = Checkbutton(toolbar, text="Overlay", command=self.overlay, variable=self.overlayOn)    
         openbutton.pack(side=LEFT)
         openfolder.pack(side=LEFT)
         savebutton.pack(side=LEFT)
         saveasbutton.pack(side=LEFT)
         connectbutton.pack(side=LEFT)
+        flipbutton.pack(side=LEFT)
         overlaycheckbox.pack(side=LEFT)
         toolbar.pack(fill=X)
         
@@ -514,6 +516,12 @@ class Application(Frame):
             self.portrait_S.unsetBinds()
             self.portrait_M.setImage(self.portrait_L.im)
             self.portrait_S.setImage(self.portrait_L.im)
+    
+    """Flip the small portrait vertically"""        
+    def flipPressed(self, button):
+        self.portrait_S.source_image = self.portrait_S.source_image.transpose(Image.FLIP_LEFT_RIGHT) 
+        self.portrait_S.scaleCropImage()
+        self.portrait_S.displayImage()        
         
     def openfile(self):
         self.source_image_filepath = tkinter.filedialog.askopenfilename(filetypes = (("Images", "*.jpg;*.jpeg;*.gif;*.png")
@@ -539,7 +547,8 @@ class Application(Frame):
         if event.data:
             "split if multiples files or space in name"
             files = self.master.splitlist(event.data)
-            self.openfilename(files[0])            
+            self.openfilename(files[0])
+            self.source_image_filepath = files[0]
         return event.action
         
     def quitapp(self):
