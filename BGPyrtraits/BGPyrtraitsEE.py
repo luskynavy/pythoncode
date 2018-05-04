@@ -13,6 +13,11 @@ import queue
 import ntpath
 import traceback
 
+# For drag and drop download : https://sourceforge.net/projects/tkdnd/
+# Copy the tkdnd2.8 directory to C:\Python27\tcl
+# Python wrapper TkinterDnD2 from https://sourceforge.net/projects/tkinterdnd/
+from TkinterDnD2 import *
+
 from tkinter import *
 from tkinter.ttk import *
 import tkinter.filedialog
@@ -400,6 +405,10 @@ class Application(Frame):
         
         self.not_saved = False
         self.filename_saved = ""
+        
+        "register drag and drop for files"
+        master.drop_target_register(DND_FILES)
+        master.dnd_bind('<<Drop>>', self.drop)
 
     def updategui(self):
         try:
@@ -510,17 +519,28 @@ class Application(Frame):
         self.source_image_filepath = tkinter.filedialog.askopenfilename(filetypes = (("Images", "*.jpg;*.jpeg;*.gif;*.png")
                                                          ,("All files", "*.*") ))
         if self.source_image_filepath:
-            try:
-                self.source_image = Image.open(self.source_image_filepath)
-                self.master.title(ntpath.split(self.source_image_filepath)[1])
-                self.portrait_L.setImage(self.source_image)
-                self.portrait_M.setImage(self.source_image)
-                self.portrait_S.setImage(self.source_image)
-                self.not_saved = True
-                self.filename_saved = ""
-            except Exception:                
-                traceback.print_exc()
-                tkinter.messagebox.showerror(title="Unable to open File", message="Can't open file !\n Is it a image file ?")
+            self.openfilename(self.source_image_filepath)
+        
+    def openfilename(self, filename):
+        try:
+            self.source_image = Image.open(filename)
+            self.master.title(ntpath.split(filename)[1])
+            self.portrait_L.setImage(self.source_image)
+            self.portrait_M.setImage(self.source_image)
+            self.portrait_S.setImage(self.source_image)
+            self.not_saved = True
+            self.filename_saved = ""
+        except Exception:                
+            traceback.print_exc()
+            tkinter.messagebox.showerror(title="Unable to open File", message="Can't open file !\n Is it a image file ?")
+    
+    """Manage drag and drop"""
+    def drop(self, event):
+        if event.data:
+            "split if multiples files or space in name"
+            files = self.master.splitlist(event.data)
+            self.openfilename(files[0])            
+        return event.action
         
     def quitapp(self):
         if self.source_image:
@@ -570,8 +590,8 @@ class Application(Frame):
         portraits = [self.portrait_L, self.portrait_M, self.portrait_S]
         self.batchwindow = BatchWin(self.config, self.master, portraits, self.guieventqueue)
             
-        """Next 2 methods format the names of the output files
-        as BG:EE needs a strict name formatting"""
+    """Next 2 methods format the names of the output files
+    as BG:EE needs a strict name formatting"""
     def format_save_filepath(self, filepath, increment=False):
         folder, filename = path.split(filepath)
         filename = filename.replace(" ", "")[0:7]
@@ -634,7 +654,9 @@ def cmdfile(config, width, height, suffixe, inputfile, folderoutpath):
 if __name__ == "__main__" :
     config = Config()
     if len(sys.argv) == 1:
-        root = Tk()
+        "need to use the Tk from TkinterDnD for drag and drop"
+        #root = Tk()
+        root = TkinterDnD.Tk()
         root.resizable(0,0)
         root.title("BGPyrtraits")        
         Application(config, master=root).mainloop()

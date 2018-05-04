@@ -39,7 +39,9 @@ if __name__ == "__main__" :
     config.OVERLAY_IMG = "/overlayPoE.png"
     
     if len(sys.argv) == 1:
-        root = Tk()
+        "need to use the Tk from TkinterDnD for drag and drop"
+        #root = Tk()
+        root = TkinterDnD.Tk()
         root.resizable(0,0)
         root.title("BGPyrtraits")
         Application(config, master=root).mainloop()
