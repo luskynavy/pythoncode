@@ -22,7 +22,6 @@ from ctypes import *
 
 from shader import Shader
 
-#model = "NPC_Gloria"
 model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_ClubDancer03/NPC_ClubDancer03"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_ClubDancer02/NPC_ClubDancer02"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_ClubDancer04/NPC_ClubDancer04"
@@ -51,6 +50,7 @@ model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Sati/NPC_Sat
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Yuna/NPC_Yuna"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Auction/NPC_Auction"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/NPC/NPC_Bartender/NPC_Bartender"
+model = "../../Mesh/NPC_Gloria"
  
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/PC/DE/BD/DE_BD_CS_32/DE_BD_CS_32"
 #model = "../../../Mesh/Scarlet Blade/Quickbms/out/a/Objects/PC/DE/BD/DE_BD_CS_30/DE_BD_CS_30"
