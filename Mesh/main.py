@@ -135,6 +135,7 @@ class Renderer(Widget):
             
         Clock.schedule_interval(self.update_scene, 1 / 60.)
 
+        # ============= All stuff after is for trackball implementation ===========
         self._touches = []
         
         self.button = Button(text='load')

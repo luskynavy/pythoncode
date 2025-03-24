@@ -105,7 +105,7 @@ class MeshAsciiLoader(object):
     """  """
     
     def __init__(self, infile, scale):
-        """Loads a Wavefront OBJ file. """
+        """Loads a Mesh ASCII file. """
         
         t = time.clock()
         self.objects = [] #the MeshData list        
@@ -115,6 +115,8 @@ class MeshAsciiLoader(object):
         dirname = os.path.dirname(infile)
         if dirname != '':
             dirname += '/'
+    
+        Logger.info( 'loading ' + infile)
     
         file = open(infile,'r')
         
@@ -150,8 +152,10 @@ class MeshAsciiLoader(object):
                 uvLayerID = int(ReadLineIgnoreComments(file))
                 if (textureID == 0): #diffuse is always 0
                     mesh.diffuse = dirname + os.path.basename(textureFilename)
+                    Logger.info( 'diffuse ' + mesh.diffuse)
                 elif (textureCount == 2): #diffuse then normal
                     mesh.normal = dirname + os.path.basename(textureFilename)
+                    Logger.info( 'normal ' + mesh.normal)
                 elif (textureCount == 3 and textureID == 1): #diffuse, normal then specular
                     mesh.normal = dirname + os.path.basename(textureFilename)
                 elif (textureCount == 4 and textureID == 2): #diffuse, light, normal then specular                    

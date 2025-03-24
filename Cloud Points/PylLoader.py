@@ -42,37 +42,51 @@ class PylLoader(object):
         Logger.debug("Loaded in " + str(time.clock() - t))
         
         t = time.clock()
-            
-        nbVertex = plydata['vertex'].data.size
         
-        if nbVertex >= 65535:
-            nbVertex = 65535
-            
-        mesh = MeshData()
+        nbTotalVertex = plydata['vertex'].data.size
         
-        i = 0
-        mesh.indices = range(nbVertex)
-        mesh.vertices = [0] * nbVertex * (3 + 4)
-        for v in plydata['vertex'].data:
-            if i == nbVertex:
-                break
-            mesh.vertices[i * 7 + 0] = v['x'] * scale 
-            mesh.vertices[i * 7 + 1] = v['y'] * scale 
-            mesh.vertices[i * 7 + 2] = v['z'] * scale
-            #mesh.vertices[i * 7 + 3] = 1.0
-            #mesh.vertices[i * 7 + 4] = 0
-            #mesh.vertices[i * 7 + 5] = 0
-            mesh.vertices[i * 7 + 3] = float(v['red']) / 255
-            mesh.vertices[i * 7 + 4] = float(v['green']) / 255
-            mesh.vertices[i * 7 + 5] = float(v['blue']) / 255            
-            #mesh.vertices[i * 7 + 3] = float(v['diffuse_red']) / 255
-            #mesh.vertices[i * 7 + 4] = float(v['diffuse_green']) / 255
-            #mesh.vertices[i * 7 + 5] = float(v['diffuse_blue']) / 255
-            mesh.vertices[i * 7 + 6] = 1.0
-            #print i            
-            i += 1
+        #max vertex allowed for a mesh (Open gl es limitation)
+        maxVertexByMesh = 65535
+        
+        nbMesh = nbTotalVertex / maxVertexByMesh
+        
+        #split vertices
+        for i in range(nbMesh):
+            offset = i * maxVertexByMesh
             
-        self.objects.append(mesh)
+            #get remaining vertices 
+            if offset + maxVertexByMesh > nbTotalVertex:
+                nbVertex = nbTotalVertex - offset
+            else:
+                nbVertex = maxVertexByMesh
+        
+            #if nbVertex >= maxVertexByMesh:
+            #    nbVertex = maxVertexByMesh
+            
+            mesh = MeshData()
+            
+            #create current mesh
+            i = 0
+            mesh.indices = range(nbVertex)
+            mesh.vertices = [0] * nbVertex * (3 + 4)
+            for v in plydata['vertex'].data[offset:offset + nbVertex]:
+                mesh.vertices[i * 7 + 0] = v['x'] * scale 
+                mesh.vertices[i * 7 + 1] = v['y'] * scale 
+                mesh.vertices[i * 7 + 2] = v['z'] * scale
+                #mesh.vertices[i * 7 + 3] = 1.0
+                #mesh.vertices[i * 7 + 4] = 0
+                #mesh.vertices[i * 7 + 5] = 0
+                mesh.vertices[i * 7 + 3] = float(v['red']) / 255
+                mesh.vertices[i * 7 + 4] = float(v['green']) / 255
+                mesh.vertices[i * 7 + 5] = float(v['blue']) / 255            
+                #mesh.vertices[i * 7 + 3] = float(v['diffuse_red']) / 255
+                #mesh.vertices[i * 7 + 4] = float(v['diffuse_green']) / 255
+                #mesh.vertices[i * 7 + 5] = float(v['diffuse_blue']) / 255
+                mesh.vertices[i * 7 + 6] = 1.0
+                #print i            
+                i += 1
+                
+            self.objects.append(mesh)
         
         Logger.debug('self.objects ' + str(len(self.objects)))
         

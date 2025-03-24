@@ -2,23 +2,37 @@ from kivy.app import App
 from kivy.clock import Clock
 from kivy.resources import resource_find
 from kivy.graphics.transformation import Matrix
+from kivy.uix.floatlayout import FloatLayout
+from kivy.graphics.opengl import *
+from kivy.graphics import *
 from kivy.core.window import Window
-from kivy.core.image import Image
 from PylLoader import PylLoader
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
-from kivy.graphics.opengl import *
-from kivy.graphics import *
+from kivy.core.image import Image
+
+from kivy.uix.button import Button
 
 
-class Renderer(Widget):
+class Renderer(Widget):    
+    def change_shader(self, *l):
+        print 'change_shader'
+        if self.shader == 0:            
+            self.canvas.shader.source = resource_find('shaders-opengl-triangle.glsl')
+            self.shader = 1
+        else:
+            self.canvas.shader.source = resource_find('shaders-opengl-triangle-progressvie.glsl')
+            self.shader = 0
+        self.update_glsl()
+        
     def __init__(self, **kwargs):
+        self.shader = 1
         
         #filename = 'points.ply'
         filename = 'skull.ply'
         #filename = 'fragment.ply' # binary error reading
         
-        scale = 1.0 / 50
+        scale = 1.0 / 40
         
         self.scene = PylLoader(resource_find(filename), scale)
         
@@ -28,14 +42,28 @@ class Renderer(Widget):
         super(Renderer, self).__init__(**kwargs)
         with self.canvas:
             self.cb = Callback(self.setup_gl_context)
+
             PushMatrix()
             self.setup_scene()
             PopMatrix()
             self.cb = Callback(self.reset_gl_context)
-        Clock.schedule_interval(self.update_glsl, 1 / 60.)
+            
+        self.update_glsl()
+
+        Clock.schedule_interval(self.update_scene, 1 / 60.)
         
         # ============= All stuff after is for trackball implementation ===========
         self._touches = []
+        
+        self.button = Button(text='shader')
+        self.button.bind(on_release=self.change_shader)
+        super(Renderer, self).add_widget(self.button)
+    
+    def on_size(self, instance, value):        
+        self.update_glsl()
+
+    def on_pos(self, instance, value):
+        pass
 
     def setup_gl_context(self, *args):
         glEnable(GL_DEPTH_TEST)
@@ -46,14 +74,11 @@ class Renderer(Widget):
         glDisable(GL_DEPTH_TEST)
 
     def update_glsl(self, *largs):
-        #proj = Matrix().view_clip(0, self.width, 0, self.height, 1, 100, 0)
-        #proj = Matrix().view_clip(0, self.width, 0, self.height, 0, 500, .9)
         asp = self.width / float(self.height)
         proj = Matrix().view_clip(-asp, asp, -1, 1, 1, 500, 1)
         self.canvas['projection_mat'] = proj
 
     def setup_scene(self):
-        #Color(0, 0, 0, 1)
         Color(.5, .5, .5, 0)
 
         PushMatrix()
@@ -64,6 +89,8 @@ class Renderer(Widget):
         # here just rotate scene for best view
         self.roty = Rotate(180, 0, 1, 0)
         self.scale = Scale(1)
+        
+        UpdateNormalMatrix()
 
         self.draw_elements()
         
@@ -71,7 +98,7 @@ class Renderer(Widget):
         
     def draw_elements(self):
         #Draw separately all meshes on the scene
-        def _draw_element(m):                
+        def _draw_element(m):
             mesh = Mesh(
                 vertices=m.vertices,
                 indices=m.indices,
@@ -83,7 +110,7 @@ class Renderer(Widget):
         for meshid in range(0, len(self.scene.objects)):
             # Draw each element
             mesh = self.scene.objects[meshid]
-
+            
             _draw_element(mesh)
         
     def update_scene(self, *largs):
@@ -153,7 +180,11 @@ class Renderer(Widget):
 
 class RendererApp(App):
     def build(self):
-        return Renderer()
+        #return Renderer()
+        root = FloatLayout()
+        renderer = Renderer()
+        root.add_widget(renderer)        
+        return root
 
 if __name__ == "__main__":
     RendererApp().run()
