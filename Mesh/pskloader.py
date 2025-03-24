@@ -8,7 +8,7 @@ class MeshData(object):
         self.name = kwargs.get("name")
         self.vertex_format = [
             ('v_pos', 3, 'float'),
-            #('v_normal', 3, 'float'),
+            ('v_normal', 3, 'float'),
             ('v_tc0', 2, 'float')]
         self.vertices = []
         self.indices = []
@@ -75,6 +75,10 @@ class PSKFileLoader(object):
         global vertexlist, faces, faceslist, UVCoords, faceuv, facemat, matlist, dirname
         #global DEBUGLOG        
         #print ("Importing file: ", infile)
+        
+        dirname = os.path.dirname(infile)
+        if dirname != '':
+            dirname += '/'
 
         #     md5_bones=[]
         pskfile = open(infile,'rb')
@@ -132,7 +136,7 @@ class PSKFileLoader(object):
             
                        
             mesh.vertices.extend(vertexlist[indata[0]])
-            #mesh.vertices.extend([0,0,0])
+            mesh.vertices.extend([0,0,0])
             mesh.vertices.extend([indata[2],indata[3]])
             
     #         print([indata[0],indata[2],indata[3]])
@@ -226,7 +230,7 @@ class PSKFileLoader(object):
         #==================================================================================================
         ##
         #read the MATT0000 header
-        '''indata = unpack('20s3i',pskfile.read(32))
+        indata = unpack('20s3i',pskfile.read(32))
         recCount = indata[3]
         Logger.debug( "Nbr of MATT0000 records: " +    str(recCount))
         #print " - Not importing any material data now. PSKs are texture wrapped! \n"
@@ -235,21 +239,22 @@ class PSKFileLoader(object):
         while counter < recCount:
             matlist.append('')
             indata = unpack('64s6i',pskfile.read(88))
-            Logger.debug( ' ' + str(counter) + '' + indata[0].rstrip('\x00') + ' ')
+            Logger.debug( 'mat ' + str(counter) + '' + indata[0].rstrip('\x00') + ' ')
 
-            diffuse = ''
-            normal = ''
-            try:
+            mesh.diffuse = ''
+            mesh.normal = ''
+            try:                
                 matfile = open(dirname + indata[0].rstrip('\x00') + '.mat')
                 for line in matfile:
                     if line.split('=')[0] == 'Diffuse':
-                        diffuse = line.split('=')[1].replace('\n', '') + '.tga'
+                        mesh.diffuse = dirname + line.split('=')[1].replace('\n', '') + '.tga'
+                        Logger.debug('diffuse ' + mesh.diffuse)
                     if line.split('=')[0] == 'Normal':
-                        normal = line.split('=')[1].replace('\n', '') + '.tga'
+                        mesh.normal = dirname + line.split('=')[1].replace('\n', '') + '.tga'
             except:
                 pass
-            matlist[counter] = [diffuse, normal]
-            counter = counter + 1'''
+            matlist[counter] = [mesh.diffuse, mesh.normal]
+            counter = counter + 1
         #Logger.debug(matlist)
         
         

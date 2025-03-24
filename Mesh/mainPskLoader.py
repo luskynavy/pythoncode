@@ -8,8 +8,8 @@ from kivy.graphics import Canvas, Rectangle, Callback, PushMatrix, \
     PopMatrix, Color, Translate, Rotate, Scale, Mesh, ChangeState, \
     UpdateNormalMatrix, BindTexture
 #from objloader import ObjFileLoader
-#from pskloader import PSKFileLoader
-from MeshAsciiLoader import MeshAsciiLoader
+from pskloader import PSKFileLoader
+#from MeshAsciiLoader import MeshAsciiLoader
 from kivy.logger import Logger
 from kivy.uix.widget import Widget
 from kivy.graphics.fbo import Fbo
@@ -78,7 +78,6 @@ class Renderer(Widget):
             #self.fbo.shader.source = resource_find('flat.glsl')            
             self.fbo.shader.source = resource_find('normalmap.glsl')
             self.shader = 0
-        self.update_glsl()
         
         
     def __init__(self, **kwargs):
@@ -91,17 +90,20 @@ class Renderer(Widget):
         scale = 3        
         #dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
         #dir = "Duke Nukem Forever_Kitty Pussoix"
-        dir = "Duke_Nukem_by_Ventrue"
+        #dir = "Duke_Nukem_by_Ventrue"
         #dir = "DOA5U_Rachel_Nurse/Model" #pb uv
                 
-        if not os.path.isdir(meshdir):
-            self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
-        else:
-            self.scene = MeshAsciiLoader(resource_find(meshdir + dir + "/Generic_Item.mesh.ascii"), scale)
+        #if not os.path.isdir(meshdir):
+        #    self.scene = MeshAsciiLoader(resource_find(dir + "/Generic_Item.mesh.ascii"), scale)
+        #else:
+        #    self.scene = MeshAsciiLoader(resource_find(meshdir + dir + "/Generic_Item.mesh.ascii"), scale)
                 
-        #scale = .03
-        #self.texturename = 'Batman_Rabbit_Head_Posed/Batman_V3_Body_D.PNG'
-        #self.scene = PSKFileLoader(resource_find("Batman_Rabbit_Head_Posed/Batman_Rabbit_Head_Posed.psk"), scale)
+        scale = .03
+        self.texturename = 'Batman_Rabbit_Head_Posed/Batman_V3_Body_D.tga'
+        self.texturenameN = 'Batman_Rabbit_Head_Posed/Batman_V3_Body_N.tga'
+        self.scene = PSKFileLoader(resource_find("Batman_Rabbit_Head_Posed/Batman_Rabbit_Head_Posed.psk"), scale)
+        Logger.debug( 'texturename ' + self.texturename)
+        Logger.debug( 'diffuse ' + self.scene.objects[0].diffuse)
         #self.texturename = 'Gray/Gray_C1.tga'
         #self.scene = PSKFileLoader(resource_find("Gray/Mike_TPP.psk"), scale) #too many indices, good for split test
         #self.texturename = 'CV_Talia/Talia_Body_D.tga'
@@ -243,12 +245,12 @@ class Renderer(Widget):
             # Draw each element
             mesh = self.scene.objects[meshid]
             #_set_color(0.7, 0.7, 0., id_color=(255, 255, 0))
-            if (mesh.diffuse != ""):
-                _draw_element(mesh, mesh.diffuse, mesh.normal)
-                #_draw_element(mesh, mesh.diffuse)
+            if (False and mesh.diffuse != ""):
+                #_draw_element(mesh, mesh.diffuse, mesh.normal)
+                _draw_element(mesh, mesh.diffuse)
                 #_draw_element(mesh, mesh.normal)
             else:
-                _draw_element(mesh, self.texturename)
+                _draw_element(mesh, self.texturename, self.texturenameN)
         
     def update_scene(self, *largs):
         pass
