@@ -32,7 +32,7 @@ class Renderer(Widget):
         filename = 'skull.ply'
         #filename = 'fragment.ply' # binary error reading
         
-        scale = 1.0 / 40
+        scale = 1.0 / 30
         
         self.scene = PylLoader(resource_find(filename), scale)
         
@@ -82,12 +82,12 @@ class Renderer(Widget):
         Color(.5, .5, .5, 0)
 
         PushMatrix()
-        Translate(0, -3, -5)
+        Translate(0, 3, -5)
         # This Kivy native Rotation is used just for
         # enabling rotation scene like trackball
         self.rotx = Rotate(0, 1, 0, 0)
         # here just rotate scene for best view
-        self.roty = Rotate(180, 0, 1, 0)
+        self.roty = Rotate(0, 0, 1, 0)
         self.scale = Scale(1)
         
         UpdateNormalMatrix()
