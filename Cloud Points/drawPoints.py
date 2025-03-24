@@ -21,7 +21,7 @@ class Renderer(Widget):
             self.canvas.shader.source = resource_find('shaders-opengl-triangle.glsl')
             self.shader = 1
         else:
-            self.canvas.shader.source = resource_find('shaders-opengl-triangle-progressvie.glsl')
+            self.canvas.shader.source = resource_find('shaders-opengl-triangle-progressive.glsl')
             self.shader = 0
         self.update_glsl()
         
