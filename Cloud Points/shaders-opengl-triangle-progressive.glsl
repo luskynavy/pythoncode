@@ -15,13 +15,17 @@ void main (void) {
 	
     vec4 pos = modelview_mat * vec4(v_pos,1.0);
     gl_Position = projection_mat * pos;
-    if (gl_Position.w < 5)
+	if (gl_Position.w < 1.5)
     {
-        gl_PointSize = 5.0f;
+        gl_PointSize = 7.0;
+    }
+    else if (gl_Position.w < 5)
+    {
+        gl_PointSize = 5.0;
     }
     else
     {
-        gl_PointSize = 2.0f;
+        gl_PointSize = 2.0;
     }
     frag_color = v_color;
 }

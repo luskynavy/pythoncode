@@ -12,7 +12,7 @@ uniform mat4 projection_mat;
 varying vec4 frag_color;
 
 void main (void) {
-	gl_PointSize = 1.0f;
+    gl_PointSize = 1.0;
     vec4 pos = modelview_mat * vec4(v_pos,1.0);
     gl_Position = projection_mat * pos;
     frag_color = v_color;

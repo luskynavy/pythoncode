@@ -18,29 +18,36 @@ class Renderer(Widget):
     def change_shader(self, *l):
         print 'change_shader'
         if self.shader == 0:            
-            self.canvas.shader.source = resource_find('shaders-opengl-triangle.glsl')
+            self.fbo.shader.source = resource_find('shaders-opengl-triangle.glsl')
             self.shader = 1
         else:
-            self.canvas.shader.source = resource_find('shaders-opengl-triangle-progressive.glsl')
+            self.fbo.shader.source = resource_find('shaders-opengl-triangle-progressive.glsl')
             self.shader = 0
         self.update_glsl()
         
-    def __init__(self, **kwargs):
-        self.shader = 1
-        
+    def __init__(self, **kwargs):        
+        scale = 1.0 / 30
+
         #filename = 'points.ply'
         filename = 'skull.ply'
         #filename = 'fragment.ply' # binary error reading
         
-        scale = 1.0 / 30
-        
         self.scene = PylLoader(resource_find(filename), scale)
-        
-        self.canvas = RenderContext(compute_normal_mat=True)
-        self.canvas.shader.source = resource_find('shaders-opengl-triangle.glsl')
+                
+        self.canvas = Canvas()
+        with self.canvas:
+            self.fbo = Fbo(size=self.size,
+                           with_depthbuffer=True,
+                           compute_normal_mat=True,
+                           clear_color=(0, 0, 0, 0.))
+            self.viewport = Rectangle(size=self.size, pos=self.pos)
+        self.fbo.shader.source = resource_find('shaders-opengl-triangle.glsl')
+        self.shader = 1
 
         super(Renderer, self).__init__(**kwargs)
-        with self.canvas:
+        with self.fbo:
+            #ClearBuffers(clear_depth=True)            
+
             self.cb = Callback(self.setup_gl_context)
 
             PushMatrix()
@@ -60,13 +67,21 @@ class Renderer(Widget):
         super(Renderer, self).add_widget(self.button)
     
     def on_size(self, instance, value):        
+        self.fbo.size = value
+        self.viewport.texture = self.fbo.texture
+        self.viewport.size = value
         self.update_glsl()
 
     def on_pos(self, instance, value):
-        pass
+        self.viewport.pos = value
+
+    def on_texture(self, instance, value):
+        self.viewport.texture = value
 
     def setup_gl_context(self, *args):
+        #clear_buffer        
         glEnable(GL_DEPTH_TEST)
+        self.fbo.clear_buffer()
         glEnable(0x8642) #GL_VERTEX_PROGRAM_POINT_SIZE
         #glEnable(0x8861) #GL_POINT_SPRITE
 
@@ -76,7 +91,7 @@ class Renderer(Widget):
     def update_glsl(self, *largs):
         asp = self.width / float(self.height)
         proj = Matrix().view_clip(-asp, asp, -1, 1, 1, 500, 1)
-        self.canvas['projection_mat'] = proj
+        self.fbo['projection_mat'] = proj
 
     def setup_scene(self):
         Color(.5, .5, .5, 0)
@@ -180,11 +195,11 @@ class Renderer(Widget):
 
 class RendererApp(App):
     def build(self):
-        #return Renderer()
         root = FloatLayout()
         renderer = Renderer()
         root.add_widget(renderer)        
         return root
+
 
 if __name__ == "__main__":
     RendererApp().run()
