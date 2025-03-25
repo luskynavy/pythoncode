@@ -75,15 +75,13 @@ class Renderer(Widget):
             self.fbo.shader.source = resource_find('simple.glsl')
             self.shader = 1
         else:
-            #self.fbo.shader.source = resource_find('flat.glsl')            
+            #self.fbo.shader.source = resource_find('flat.glsl')
             self.fbo.shader.source = resource_find('normalmap.glsl')
             self.shader = 0
         self.update_glsl()
         
         
-    def __init__(self, **kwargs):
-        #self.scene = ObjFileLoader(resource_find("testnurbs.obj"))
-        
+    def __init__(self, **kwargs):        
         Logger.debug('******************************************************')
         scale = 3        
         #dir = "Duke Nukem Forever_Dr_Valencia" # error index out of range
@@ -123,8 +121,7 @@ class Renderer(Widget):
         self.fbo['toggletexture'] = 1
 
         with self.fbo:
-            #ClearBuffers(clear_depth=True)            
-
+            #ClearBuffers(clear_depth=True)
             self.cb = Callback(self.setup_gl_context)
 
             PushMatrix()
