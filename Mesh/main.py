@@ -82,9 +82,6 @@ class Renderer(Widget):
         
         
     def __init__(self, **kwargs):
-        self.model = 0
-        self.shader = 0 
-        self.canvas = Canvas()
         #self.scene = ObjFileLoader(resource_find("testnurbs.obj"))
         
         Logger.debug('******************************************************')
@@ -109,6 +106,7 @@ class Renderer(Widget):
         #self.scene = PSKFileLoader(resource_find("CV_Talia/Talia_posed.psk"), scale) #too many indices, good for split test        
         Logger.debug('******************************************************')        
 
+        self.canvas = Canvas()
         with self.canvas:
             self.fbo = Fbo(size=self.size,
                            with_depthbuffer=True,
@@ -117,6 +115,7 @@ class Renderer(Widget):
             self.viewport = Rectangle(size=self.size, pos=self.pos)
         #self.fbo.shader.source = resource_find('simple.glsl')
         self.fbo.shader.source = resource_find('normalmap.glsl')
+        self.shader = 0
 
         super(Renderer, self).__init__(**kwargs)
         
@@ -185,7 +184,7 @@ class Renderer(Widget):
         Color(.5, .5, .5, 0)
 
         PushMatrix()
-        Translate(0, -3, -5)        
+        Translate(0, -3, -5)
         # This Kivy native Rotation is used just for
         # enabling rotation scene like trackball
         self.rotx = Rotate(0, 1, 0, 0)
